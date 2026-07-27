@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Story, PostResponse, ToneOption } from '../types';
+import { Story, PostResponse, ToneOption, ProviderOption } from '../types';
 
 const API_BASE = '/api';
 
@@ -13,17 +13,19 @@ export const fetchTrendingStories = async (source: string = 'hacker_news', limit
 export const generatePost = async (
   storyId?: string,
   tone: ToneOption = 'professional',
-  provider?: string,
+  provider?: ProviderOption,
   model?: string
 ): Promise<PostResponse> => {
+  const providerParam = provider === 'default' ? undefined : provider;
   const response = await axios.post<PostResponse>(`${API_BASE}/posts/generate`, {
     story_id: storyId,
     tone,
-    provider,
+    provider: providerParam,
     model
   });
   return response.data;
 };
+
 
 export const fetchPostHistory = async (limit: number = 20): Promise<PostResponse[]> => {
   const response = await axios.get<PostResponse[]>(`${API_BASE}/posts/history`, {

@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { StoryCard } from './components/StoryCard';
 import { ToneSelector } from './components/ToneSelector';
+import { ProviderSelector } from './components/ProviderSelector';
 import { PostPreview } from './components/PostPreview';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { ExportModal } from './components/ExportModal';
-import { Story, PostResponse, ToneOption } from './types';
+import { Story, PostResponse, ToneOption, ProviderOption } from './types';
 import { fetchTrendingStories, generatePost, fetchPostHistory } from './api/client';
 import { RefreshCw, Sparkles, Newspaper, AlertCircle } from 'lucide-react';
 
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [currentPost, setCurrentPost] = useState<PostResponse | null>(null);
   const [tone, setTone] = useState<ToneOption>('professional');
+  const [provider, setProvider] = useState<ProviderOption>('default');
 
   const [isFetchingStories, setIsFetchingStories] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -64,7 +66,7 @@ export const App: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      const result = await generatePost(storyToUse.id, tone);
+      const result = await generatePost(storyToUse.id, tone, provider);
       setCurrentPost(result);
       loadHistory();
     } catch (err: any) {
@@ -78,8 +80,8 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <Header
         onOpenHistory={() => setIsHistoryOpen(true)}
-        onOpenSettings={() => alert('Backend configured with default provider Gemini / env options.')}
       />
+
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Hacker News Feed & Controls (5 Cols) */}
@@ -101,7 +103,10 @@ export const App: React.FC = () => {
               </button>
             </div>
 
+            <ProviderSelector selectedProvider={provider} onSelectProvider={setProvider} />
+
             <ToneSelector selectedTone={tone} onSelectTone={setTone} />
+
 
             <button
               onClick={() => handleGenerate()}

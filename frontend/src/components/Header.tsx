@@ -1,13 +1,11 @@
 import React from 'react';
-import { Sparkles, History, SlidersHorizontal } from 'lucide-react';
-
+import { Sparkles, History } from 'lucide-react';
 
 interface HeaderProps {
   onOpenHistory: () => void;
-  onOpenSettings: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenHistory, onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenHistory }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -27,14 +25,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHistory, onOpenSettings })
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
-            onClick={onOpenSettings}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-            title="Settings & Provider Config"
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-          </button>
-          
           <button
             onClick={onOpenHistory}
             className="flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-sm font-medium transition-colors"

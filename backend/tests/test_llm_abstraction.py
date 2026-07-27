@@ -18,4 +18,5 @@ def test_ai_factory_providers():
     assert ollama.provider_name == "Ollama"
 
     fallback = AIFactory.get_provider("unknown_provider")
-    assert isinstance(fallback, GeminiProvider)
+    assert fallback.provider_name.lower() == "openai"
+

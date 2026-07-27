@@ -10,14 +10,30 @@ logger = logging.getLogger(__name__)
 class AIFactory:
     @staticmethod
     def get_provider(provider_name: str = None, model: str = None) -> BaseLLMProvider:
-        name = (provider_name or settings.LLM_PROVIDER).lower()
+        # If provider_name is not explicitly passed, read LLM_PROVIDER from .env settings
+        if not provider_name or not provider_name.strip():
+            provider_name = settings.LLM_PROVIDER
 
-        if name == "gemini":
-            return GeminiProvider(model=model)
-        elif name == "openai":
-            return OpenAIProvider(model=model)
+        name = provider_name.lower().strip()
+
+        if name == "openai":
+            selected_model = model or settings.OPENAI_MODEL
+            logger.info(f"Instantiating OpenAI Provider (model: {selected_model})")
+            return OpenAIProvider(model=selected_model)
         elif name == "ollama":
-            return OllamaProvider(model=model)
+            selected_model = model or settings.OLLAMA_MODEL
+            logger.info(f"Instantiating Ollama Provider (model: {selected_model})")
+            return OllamaProvider(model=selected_model)
+        elif name == "gemini":
+            selected_model = model or settings.GEMINI_MODEL
+            logger.info(f"Instantiating Gemini Provider (model: {selected_model})")
+            return GeminiProvider(model=selected_model)
         else:
-            logger.warning(f"Unknown provider '{name}', defaulting to Gemini")
-            return GeminiProvider(model=model)
+            env_provider = (settings.LLM_PROVIDER or "gemini").lower().strip()
+            logger.warning(f"Unknown provider '{name}', falling back to .env LLM_PROVIDER '{env_provider}'")
+            if env_provider == "openai":
+                return OpenAIProvider(model=model or settings.OPENAI_MODEL)
+            elif env_provider == "ollama":
+                return OllamaProvider(model=model or settings.OLLAMA_MODEL)
+            else:
+                return GeminiProvider(model=model or settings.GEMINI_MODEL)
