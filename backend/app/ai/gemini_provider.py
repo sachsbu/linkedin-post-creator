@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 class GeminiProvider(BaseLLMProvider):
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model = model or settings.DEFAULT_MODEL or "gemini-2.5-flash"
+        self.model = model or settings.GEMINI_MODEL or "gemini-2.5-flash"
+
 
     @property
     def provider_name(self) -> str:
@@ -99,7 +100,8 @@ class GeminiProvider(BaseLLMProvider):
             raw_text = await self._call_gemini_api(LINKEDIN_SYSTEM_PROMPT, user_prompt)
             data = json.loads(raw_text)
             caption = data.get("caption", "").strip()
-            hashtags = data.get("hashtags", ["#Tech", "#Programming", "#SoftwareEngineering", "#AI", "#Startups"])
+            raw_hashtags = data.get("hashtags", [])
+            hashtags = self.sanitize_hashtags(raw_hashtags, title)
             words = len(caption.split())
 
             return {
@@ -116,9 +118,50 @@ class GeminiProvider(BaseLLMProvider):
                 f"Key takeaway: {summary.key_takeaway}\n\n"
                 f"What are your thoughts on this development?"
             )
-            tags = ["#TechNews", "#SoftwareEngineering", "#Programming", "#Innovation", "#Tech"]
+            tags = self.sanitize_hashtags([], title)
             return {
                 "caption": fallback_caption,
                 "hashtags": tags,
                 "word_count": len(fallback_caption.split())
             }
+
+    @staticmethod
+    def sanitize_hashtags(raw_hashtags: list, title: str) -> list:
+        cleaned = []
+        if isinstance(raw_hashtags, list):
+            for tag in raw_hashtags:
+                if isinstance(tag, str):
+                    tag_clean = tag.strip().replace(" ", "").replace("#", "")
+                    if tag_clean and len(tag_clean) > 1:
+                        cleaned.append(f"#{tag_clean}")
+
+        seen = set()
+        unique_tags = []
+        for tag in cleaned:
+            if tag.lower() not in seen:
+                seen.add(tag.lower())
+                unique_tags.append(tag)
+
+        if len(unique_tags) < 5:
+            import re
+            words = re.findall(r'[A-Za-z0-9]+', title)
+            stopwords = {"with", "from", "that", "this", "have", "releases", "shows", "about", "your", "more"}
+            for w in words:
+                if len(w) > 3 and w.lower() not in stopwords:
+                    tt = f"#{w.capitalize()}"
+                    if tt.lower() not in seen:
+                        seen.add(tt.lower())
+                        unique_tags.append(tt)
+                        if len(unique_tags) >= 6:
+                            break
+
+        defaults = ["#TechNews", "#SoftwareEngineering", "#Innovation", "#Programming", "#Tech"]
+        for d in defaults:
+            if len(unique_tags) >= 5:
+                break
+            if d.lower() not in seen:
+                seen.add(d.lower())
+                unique_tags.append(d)
+
+        return unique_tags[:6]
+

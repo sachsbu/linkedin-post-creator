@@ -16,12 +16,12 @@ STRICT CONSTRAINTS:
 4. ABSOLUTELY NO AI FLUFF / CLICHES:
    - NEVER use words like: "In today's fast-paced digital world", "delve", "game-changer", "testament", "tapestry", "beacon", "groundbreaking", "beacon of hope".
    - Sound human, conversational, and direct.
-5. Hashtags: Provide 5 to 8 relevant, high-impact tech hashtags dynamically generated from the topic.
+5. Dynamic Hashtags: Generate EXACTLY 5 to 6 highly relevant, trending hashtags derived dynamically from the specific story topic, technologies, framework, company, or domain mentioned in the story (e.g. #Python, #OpenAI, #Kubernetes, #Cybersecurity). Do NOT use generic or static placeholders.
 
 Respond strictly in JSON format matching this schema:
 {
   "caption": "The complete LinkedIn caption text (excluding hashtags)",
-  "hashtags": ["#Tag1", "#Tag2", "#Tag3", "#Tag4", "#Tag5"]
+  "hashtags": ["#TopicSpecificHashtag1", "#TopicSpecificHashtag2", "#TopicSpecificHashtag3", "#TopicSpecificHashtag4", "#TopicSpecificHashtag5", "#TopicSpecificHashtag6"]
 }
 """
 

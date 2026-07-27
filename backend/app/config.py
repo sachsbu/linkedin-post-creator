@@ -14,8 +14,15 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    
+    # Models per provider
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OLLAMA_MODEL: str = "llama3"
+    
     DEFAULT_MODEL: str = "gemini-2.5-flash"
     TEMPERATURE: float = 0.7
+
     
     # Storage & Outputs
     BASE_DIR: Path = BASE_DIR

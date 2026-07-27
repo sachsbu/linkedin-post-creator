@@ -7,13 +7,15 @@ from app.models.domain import ArticleSummary
 from app.ai.base import BaseLLMProvider
 from app.prompts.summary_prompt import SUMMARY_SYSTEM_PROMPT, SUMMARY_USER_PROMPT
 from app.prompts.linkedin_prompt import LINKEDIN_SYSTEM_PROMPT, LINKEDIN_USER_PROMPT
+from app.ai.gemini_provider import GeminiProvider
 
 logger = logging.getLogger(__name__)
 
 class OllamaProvider(BaseLLMProvider):
     def __init__(self, base_url: str = None, model: str = None):
         self.base_url = base_url or settings.OLLAMA_BASE_URL
-        self.model = model or "llama3"
+        self.model = model or settings.OLLAMA_MODEL or "llama3"
+
 
     @property
     def provider_name(self) -> str:
@@ -83,7 +85,8 @@ class OllamaProvider(BaseLLMProvider):
             raw_text = await self._call_ollama_api(LINKEDIN_SYSTEM_PROMPT, user_prompt)
             data = json.loads(raw_text)
             caption = data.get("caption", "").strip()
-            hashtags = data.get("hashtags", ["#Tech", "#SoftwareEngineering", "#AI"])
+            raw_hashtags = data.get("hashtags", [])
+            hashtags = GeminiProvider.sanitize_hashtags(raw_hashtags, title)
             return {
                 "caption": caption,
                 "hashtags": hashtags,
@@ -92,8 +95,9 @@ class OllamaProvider(BaseLLMProvider):
         except Exception as e:
             logger.error(f"Ollama post generation error: {e}")
             fallback_caption = f"Tech Update: {title}\n\n{summary.what_happened}"
+            tags = GeminiProvider.sanitize_hashtags([], title)
             return {
                 "caption": fallback_caption,
-                "hashtags": ["#TechNews", "#SoftwareEngineering"],
+                "hashtags": tags,
                 "word_count": len(fallback_caption.split())
             }

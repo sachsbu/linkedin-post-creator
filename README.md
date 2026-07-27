@@ -113,13 +113,30 @@ source_registry.register(TechCrunchFetcher())
 
 ---
 
-## API Endpoints
+## How to Run with `uv`
 
-- `GET /api/stories/trending?source=hacker_news`: Fetches and ranks trending stories.
-- `POST /api/posts/generate`: Generates a LinkedIn post for a given story and tone.
-- `GET /api/posts/history`: Returns historical posts.
-- `GET /api/posts/{id}/export?format=md|html|txt|json`: Downloads post artifact.
-- `GET /api/health`: Health status and provider configuration check.
+### 1. Command Line Post Generation (CLI)
+
+Run directly using `uv`:
+
+```bash
+cd backend
+uv run python -m app.cli --tone developer
+```
+
+Options:
+- `--tone`: `professional` (default), `founder`, `developer`, `investor`
+- `--source`: `hacker_news` (default)
+- `--story-id`: Optional specific Hacker News story ID
+
+### 2. Output Artifacts
+
+Every execution automatically generates artifacts in `output/<timestamp>_<slug>/`:
+- `post.md` (Markdown caption + metadata links)
+- `post.txt` (Clean copy-paste text)
+- `metadata.json` (Structured summary & story parameters)
+- `social_card.png` (High-res 1200x630 social media image)
+
 
 ---
 

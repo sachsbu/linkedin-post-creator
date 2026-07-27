@@ -5,6 +5,8 @@ import httpx
 from app.config import settings
 from app.models.domain import ArticleSummary
 from app.ai.base import BaseLLMProvider
+from app.ai.gemini_provider import GeminiProvider
+
 from app.prompts.summary_prompt import SUMMARY_SYSTEM_PROMPT, SUMMARY_USER_PROMPT
 from app.prompts.linkedin_prompt import LINKEDIN_SYSTEM_PROMPT, LINKEDIN_USER_PROMPT
 
@@ -13,7 +15,8 @@ logger = logging.getLogger(__name__)
 class OpenAIProvider(BaseLLMProvider):
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or settings.OPENAI_API_KEY
-        self.model = model or "gpt-4o-mini"
+        self.model = model or settings.OPENAI_MODEL or "gpt-4o-mini"
+
 
     @property
     def provider_name(self) -> str:
@@ -92,7 +95,8 @@ class OpenAIProvider(BaseLLMProvider):
             raw_text = await self._call_openai_api(LINKEDIN_SYSTEM_PROMPT, user_prompt)
             data = json.loads(raw_text)
             caption = data.get("caption", "").strip()
-            hashtags = data.get("hashtags", ["#Tech", "#Programming", "#SoftwareEngineering", "#AI"])
+            raw_hashtags = data.get("hashtags", [])
+            hashtags = GeminiProvider.sanitize_hashtags(raw_hashtags, title)
             return {
                 "caption": caption,
                 "hashtags": hashtags,
@@ -101,8 +105,10 @@ class OpenAIProvider(BaseLLMProvider):
         except Exception as e:
             logger.error(f"OpenAI post generation error: {e}")
             fallback_caption = f"Tech Update: {title}\n\n{summary.what_happened}\n\nKey Takeaway: {summary.key_takeaway}"
+            tags = GeminiProvider.sanitize_hashtags([], title)
             return {
                 "caption": fallback_caption,
-                "hashtags": ["#TechNews", "#SoftwareEngineering"],
+                "hashtags": tags,
                 "word_count": len(fallback_caption.split())
             }
+
