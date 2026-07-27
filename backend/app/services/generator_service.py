@@ -29,9 +29,12 @@ class GeneratorService:
         provider_name: Optional[str] = None,
         model_name: Optional[str] = None
     ) -> PostResponse:
-        # 1. Fetch story
+        # 1. Resolve correct fetcher (auto-detect CNET from story_id prefix)
+        if story_id and story_id.startswith("cnet_"):
+            source_name = "cnet"
+
         fetcher = source_registry.get(source_name)
-        trending_stories = await fetcher.fetch_trending_stories(limit=15)
+        trending_stories = await fetcher.fetch_trending_stories(limit=25)
 
         target_story: Optional[Story] = None
         if story_id:
@@ -44,6 +47,7 @@ class GeneratorService:
             if not trending_stories:
                 raise RuntimeError("Failed to fetch stories from news source.")
             target_story = trending_stories[0]  # Pick top story
+
 
         # 2. Scrape article content & OpenGraph metadata
         scraped_data = await ArticleScraper.scrape(target_story.url)

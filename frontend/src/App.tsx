@@ -17,6 +17,7 @@ export const App: React.FC = () => {
   const [tone, setTone] = useState<ToneOption>('professional');
   const [provider, setProvider] = useState<ProviderOption>('default');
 
+  const [newsSource, setNewsSource] = useState<string>('hacker_news');
   const [isFetchingStories, setIsFetchingStories] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -25,17 +26,18 @@ export const App: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
-  const loadStories = async () => {
+  const loadStories = async (sourceToUse?: string) => {
+    const targetSource = sourceToUse || newsSource;
     setIsFetchingStories(true);
     setErrorMsg(null);
     try {
-      const data = await fetchTrendingStories('hacker_news', 15);
+      const data = await fetchTrendingStories(targetSource, 15);
       setStories(data);
-      if (data.length > 0 && !selectedStory) {
+      if (data.length > 0) {
         setSelectedStory(data[0]);
       }
     } catch (err: any) {
-      setErrorMsg('Failed to load Hacker News stories. Ensure backend server is running.');
+      setErrorMsg(`Failed to load stories from source. Ensure backend server is running.`);
     } finally {
       setIsFetchingStories(false);
     }
@@ -66,10 +68,12 @@ export const App: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      const result = await generatePost(storyToUse.id, tone, provider);
+      const storySource = storyToUse.source_name.toLowerCase().includes('cnet') ? 'cnet' : newsSource;
+      const result = await generatePost(storyToUse.id, tone, provider, storySource);
       setCurrentPost(result);
       loadHistory();
     } catch (err: any) {
+
       setErrorMsg(err?.response?.data?.detail || 'Failed to generate LinkedIn post.');
     } finally {
       setIsGenerating(false);
@@ -82,37 +86,50 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
       />
 
-
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Hacker News Feed & Controls (5 Cols) */}
+        {/* Left Column: News Feed & Controls (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col space-y-6">
           {/* Top Control Panel */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Newspaper className="w-5 h-5 text-sky-400" />
-                <h2 className="text-sm font-bold text-slate-200">Trending Hacker News</h2>
+                <h2 className="text-sm font-bold text-slate-200">Trending Tech News</h2>
               </div>
-              <button
-                onClick={loadStories}
-                disabled={isFetchingStories}
-                className="flex items-center space-x-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
-                <span>Fetch News</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={newsSource}
+                  onChange={(e) => {
+                    const newSource = e.target.value;
+                    setNewsSource(newSource);
+                    loadStories(newSource);
+                  }}
+                  className="bg-slate-800 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
+                >
+                  <option value="hacker_news">Hacker News</option>
+                  <option value="cnet">CNET Tech News</option>
+                </select>
+                <button
+                  onClick={() => loadStories(newsSource)}
+                  disabled={isFetchingStories}
+                  className="flex items-center space-x-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
+                  <span>Fetch</span>
+                </button>
+              </div>
             </div>
 
             <ProviderSelector selectedProvider={provider} onSelectProvider={setProvider} />
 
             <ToneSelector selectedTone={tone} onSelectTone={setTone} />
 
-
             <button
               onClick={() => handleGenerate()}
               disabled={isGenerating || stories.length === 0}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
             >
+
               <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
               <span>{isGenerating ? 'Analyzing & Generating...' : 'Generate Post for Top Story'}</span>
             </button>

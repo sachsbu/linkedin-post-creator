@@ -22,10 +22,12 @@ class ArticleSummary(BaseModel):
 
 class GeneratePostRequest(BaseModel):
     story_id: Optional[str] = None
+    source: Optional[str] = "hacker_news"
     tone: str = "professional"  # professional, founder, developer, investor
     provider: Optional[str] = None  # gemini, openai, ollama
     model: Optional[str] = None
     custom_url: Optional[str] = None
+
 
 class PostResponse(BaseModel):
     id: int

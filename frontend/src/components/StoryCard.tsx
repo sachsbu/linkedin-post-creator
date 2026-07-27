@@ -56,7 +56,11 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             <User className="w-3.5 h-3.5" />
             <span>{story.author}</span>
           </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
+            {story.source_name}
+          </span>
         </div>
+
 
         <button
           onClick={(e) => {

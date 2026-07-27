@@ -25,10 +25,12 @@ async def generate_post(
         res = await GeneratorService.generate_post_pipeline(
             db=db,
             story_id=req.story_id,
+            source_name=req.source or "hacker_news",
             tone=req.tone,
             provider_name=req.provider,
             model_name=req.model
         )
+
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Post generation error: {str(e)}")
