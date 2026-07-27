@@ -11,9 +11,13 @@ import {
   MessageCircle,
   Repeat2,
   Send,
-  Globe
+  Globe,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { PostResponse } from '../types';
+import { publishPostToLinkedIn } from '../api/client';
 
 interface PostPreviewProps {
   post: PostResponse | null;
@@ -29,6 +33,8 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   onOpenExport
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   if (!post) {
     return (
@@ -49,6 +55,22 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handlePublishToLinkedIn = async () => {
+    setIsPublishing(true);
+    setPublishStatus(null);
+    try {
+      const res = await publishPostToLinkedIn(post.id);
+      setPublishStatus({ type: 'success', message: res.message || 'Successfully published to your LinkedIn Company Page!' });
+    } catch (err: any) {
+      setPublishStatus({
+        type: 'error',
+        message: err?.response?.data?.detail || 'Publishing failed. Configure LINKEDIN_ACCESS_TOKEN in .env.'
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const imgUrl = post.image_path.startsWith('http')
@@ -94,13 +116,45 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
 
           <button
             onClick={copyToClipboard}
-            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-colors"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? 'Copied!' : 'Copy Caption'}</span>
+          </button>
+
+          <button
+            onClick={handlePublishToLinkedIn}
+            disabled={isPublishing}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
+          >
+            <UploadCloud className={`w-3.5 h-3.5 ${isPublishing ? 'animate-spin' : ''}`} />
+            <span>{isPublishing ? 'Publishing...' : 'Publish to Page'}</span>
           </button>
         </div>
       </div>
+
+      {publishStatus && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-center justify-between ${
+            publishStatus.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            {publishStatus.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            )}
+            <span>{publishStatus.message}</span>
+          </div>
+          <button onClick={() => setPublishStatus(null)} className="text-slate-400 hover:text-slate-200 ml-2">
+            ✕
+          </button>
+        </div>
+      )}
+
 
       {/* Realistic LinkedIn Feed Card Preview */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">

@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = ""
     HN_API_BASE: str = "https://hacker-news.firebaseio.com/v0"
     
+    # LinkedIn Auto-Publish Settings
+    LINKEDIN_ACCESS_TOKEN: str = ""
+    LINKEDIN_ORGANIZATION_ID: str = ""
+
+    
     # Internal Paths & Storage
     BASE_DIR: Path = BASE_DIR
     OUTPUT_FOLDER: Path = ROOT_DIR / "output"

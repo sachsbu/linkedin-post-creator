@@ -36,3 +36,9 @@ export const fetchPostHistory = async (limit: number = 20): Promise<PostResponse
   });
   return response.data;
 };
+
+export const publishPostToLinkedIn = async (postId: number): Promise<{ status: string; post_urn: string; message: string }> => {
+  const response = await axios.post<{ status: string; post_urn: string; message: string }>(`${API_BASE}/posts/${postId}/publish`);
+  return response.data;
+};
+

@@ -10,8 +10,10 @@ from app.models.domain import GeneratePostRequest, PostResponse, ArticleSummary
 from app.models.db_models import PostDB
 from app.services.generator_service import GeneratorService
 from app.services.exporter import ArtifactExporter
+from app.services.linkedin_publisher import LinkedInPublisherService
 
 router = APIRouter(prefix="/api/posts", tags=["Posts"])
+
 
 @router.post("/generate", response_model=PostResponse)
 async def generate_post(
@@ -124,3 +126,32 @@ async def export_post(
         return HTMLResponse(content=html_code)
 
     raise HTTPException(status_code=404, detail=f"Export file for format '{format}' not found")
+
+@router.post("/{post_id}/publish")
+async def publish_to_linkedin(
+    post_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Publishes post directly to your LinkedIn Company Page.
+    """
+    stmt = select(PostDB).where(PostDB.id == post_id)
+    res = await db.execute(stmt)
+    post = res.scalar_one_or_none()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    hashtags = [h.strip() for h in (post.hashtags or "").split(",") if h.strip()]
+
+    try:
+        publish_res = await LinkedInPublisherService.publish_to_company_page(
+            caption=post.linkedin_caption,
+            hashtags=hashtags
+        )
+        return publish_res
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LinkedIn Publishing error: {str(e)}")
+
