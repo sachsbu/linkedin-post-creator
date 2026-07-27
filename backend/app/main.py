@@ -46,6 +46,3 @@ app.include_router(health_router)
 app.include_router(stories_router)
 app.include_router(posts_router)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
