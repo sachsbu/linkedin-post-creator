@@ -27,6 +27,7 @@ class GeneratePostRequest(BaseModel):
     provider: Optional[str] = None  # gemini, openai, ollama
     model: Optional[str] = None
     custom_url: Optional[str] = None
+    custom_title: Optional[str] = None
 
 
 class PostResponse(BaseModel):

@@ -206,7 +206,9 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             <div className="p-3 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs">
               <div className="truncate max-w-md">
                 <div className="font-semibold text-slate-200 truncate">{post.title}</div>
-                <div className="text-slate-500 text-[11px] truncate">{post.source_url}</div>
+                <div className="text-slate-500 text-[11px] truncate">
+                  {post.source_url === 'self' ? 'Self / Original Content' : post.source_url}
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <a
@@ -218,15 +220,17 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>Open Image</span>
                 </a>
-                <a
-                  href={post.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 text-xs text-slate-300 hover:text-white font-medium px-2.5 py-1 rounded bg-slate-800 border border-slate-700"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Source</span>
-                </a>
+                {post.source_url && post.source_url !== 'self' && post.source_url.startsWith('http') && (
+                  <a
+                    href={post.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-1 text-xs text-slate-300 hover:text-white font-medium px-2.5 py-1 rounded bg-slate-800 border border-slate-700"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Source</span>
+                  </a>
+                )}
               </div>
             </div>
           </div>

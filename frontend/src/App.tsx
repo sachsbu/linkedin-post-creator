@@ -8,7 +8,7 @@ import { HistoryDrawer } from './components/HistoryDrawer';
 import { ExportModal } from './components/ExportModal';
 import { Story, PostResponse, ToneOption, ProviderOption } from './types';
 import { fetchTrendingStories, generatePost, fetchPostHistory } from './api/client';
-import { RefreshCw, Sparkles, Newspaper, AlertCircle } from 'lucide-react';
+import { RefreshCw, Sparkles, Newspaper, AlertCircle, Type } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [stories, setStories] = useState<Story[]>([]);
@@ -18,6 +18,7 @@ export const App: React.FC = () => {
   const [provider, setProvider] = useState<ProviderOption>('default');
 
   const [newsSource, setNewsSource] = useState<string>('hacker_news');
+  const [customTitle, setCustomTitle] = useState<string>('');
   const [isFetchingStories, setIsFetchingStories] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -28,6 +29,13 @@ export const App: React.FC = () => {
 
   const loadStories = async (sourceToUse?: string) => {
     const targetSource = sourceToUse || newsSource;
+    if (targetSource === 'self') {
+      setIsFetchingStories(false);
+      setStories([]);
+      setSelectedStory(null);
+      return;
+    }
+
     setIsFetchingStories(true);
     setErrorMsg(null);
     try {
@@ -61,19 +69,31 @@ export const App: React.FC = () => {
   }, []);
 
   const handleGenerate = async (targetStory?: Story) => {
-    const storyToUse = targetStory || selectedStory || stories[0];
-    if (!storyToUse) return;
-
     setIsGenerating(true);
     setErrorMsg(null);
 
     try {
-      const storySource = storyToUse.source_name.toLowerCase().includes('cnet') ? 'cnet' : newsSource;
-      const result = await generatePost(storyToUse.id, tone, provider, storySource);
-      setCurrentPost(result);
+      if (customTitle.trim() || newsSource === 'self') {
+        const titleToUse = customTitle.trim() || selectedStory?.title || 'Self-authored Post';
+        const result = await generatePost(
+          undefined,
+          tone,
+          provider,
+          'self',
+          undefined,
+          titleToUse,
+          'self'
+        );
+        setCurrentPost(result);
+      } else {
+        const storyToUse = targetStory || selectedStory || stories[0];
+        if (!storyToUse) return;
+        const storySource = storyToUse.source_name.toLowerCase().includes('cnet') ? 'cnet' : newsSource;
+        const result = await generatePost(storyToUse.id, tone, provider, storySource);
+        setCurrentPost(result);
+      }
       loadHistory();
     } catch (err: any) {
-
       setErrorMsg(err?.response?.data?.detail || 'Failed to generate LinkedIn post.');
     } finally {
       setIsGenerating(false);
@@ -94,7 +114,7 @@ export const App: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Newspaper className="w-5 h-5 text-sky-400" />
-                <h2 className="text-sm font-bold text-slate-200">Trending Tech News</h2>
+                <h2 className="text-sm font-bold text-slate-200">Content Source & Settings</h2>
               </div>
               <div className="flex items-center space-x-2">
                 <select
@@ -108,16 +128,41 @@ export const App: React.FC = () => {
                 >
                   <option value="hacker_news">Hacker News</option>
                   <option value="cnet">CNET Tech News</option>
+                  <option value="self">Custom Title (Self)</option>
                 </select>
-                <button
-                  onClick={() => loadStories(newsSource)}
-                  disabled={isFetchingStories}
-                  className="flex items-center space-x-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
-                  <span>Fetch</span>
-                </button>
+                {newsSource !== 'self' && (
+                  <button
+                    onClick={() => loadStories(newsSource)}
+                    disabled={isFetchingStories}
+                    className="flex items-center space-x-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
+                    <span>Fetch</span>
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* Custom Title Input Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span className="flex items-center space-x-1.5">
+                  <Type className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Custom Title / Topic Input</span>
+                </span>
+                {customTitle.trim() && (
+                  <span className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1.5 py-0.5 rounded font-mono">
+                    Source: self
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="Type custom post title/topic (e.g. Why we switched from React to Svelte)..."
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+              />
             </div>
 
             <ProviderSelector selectedProvider={provider} onSelectProvider={setProvider} />
@@ -126,12 +171,21 @@ export const App: React.FC = () => {
 
             <button
               onClick={() => handleGenerate()}
-              disabled={isGenerating || stories.length === 0}
+              disabled={
+                isGenerating ||
+                (newsSource === 'self' && !customTitle.trim()) ||
+                (newsSource !== 'self' && !customTitle.trim() && stories.length === 0)
+              }
               className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
             >
-
               <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              <span>{isGenerating ? 'Analyzing & Generating...' : 'Generate Post for Top Story'}</span>
+              <span>
+                {isGenerating
+                  ? 'Analyzing & Generating...'
+                  : customTitle.trim() || newsSource === 'self'
+                  ? 'Generate Post from Title (Self)'
+                  : 'Generate Post for Top Story'}
+              </span>
             </button>
           </div>
 
@@ -145,11 +199,21 @@ export const App: React.FC = () => {
           {/* Trending Stories List */}
           <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
-              Front-Page Ranked Stories ({stories.length})
+              {newsSource === 'self' ? 'Custom Title Mode' : `Front-Page Ranked Stories (${stories.length})`}
             </div>
 
             <div className="space-y-3 overflow-y-auto max-h-[600px] pr-1">
-              {isFetchingStories && stories.length === 0 ? (
+              {newsSource === 'self' ? (
+                <div className="text-center py-12 px-4 text-slate-400 text-xs space-y-3 border border-dashed border-slate-800 rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto text-sky-400">
+                    <Type className="w-5 h-5" />
+                  </div>
+                  <p className="font-semibold text-slate-200">Custom Title Mode (Source: Self)</p>
+                  <p className="text-slate-500 max-w-xs mx-auto">
+                    Type your post title or topic in the title input box above and click &quot;Generate Post from Title (Self)&quot;.
+                  </p>
+                </div>
+              ) : isFetchingStories && stories.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 text-sm">
                   Loading trending stories...
                 </div>

@@ -15,7 +15,9 @@ export const generatePost = async (
   tone: ToneOption = 'professional',
   provider?: ProviderOption,
   source?: string,
-  model?: string
+  model?: string,
+  customTitle?: string,
+  customUrl?: string
 ): Promise<PostResponse> => {
   const providerParam = provider === 'default' ? undefined : provider;
   const response = await axios.post<PostResponse>(`${API_BASE}/posts/generate`, {
@@ -23,7 +25,9 @@ export const generatePost = async (
     source,
     tone,
     provider: providerParam,
-    model
+    model,
+    custom_title: customTitle,
+    custom_url: customUrl
   });
   return response.data;
 };

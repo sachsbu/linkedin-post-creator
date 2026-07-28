@@ -30,7 +30,9 @@ async def generate_post(
             source_name=req.source or "hacker_news",
             tone=req.tone,
             provider_name=req.provider,
-            model_name=req.model
+            model_name=req.model,
+            custom_title=req.custom_title,
+            custom_url=req.custom_url
         )
 
         return res

@@ -19,8 +19,8 @@ class ArticleScraper:
             "author": "",
         }
 
-        # Skip scraping if link is direct HN item
-        if "news.ycombinator.com/item" in url:
+        # Skip scraping if url is self or not http(s) or direct HN item
+        if not url or url == "self" or not url.startswith(("http://", "https://")) or "news.ycombinator.com/item" in url:
             return result
 
         headers = {

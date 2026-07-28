@@ -22,6 +22,9 @@ class ArtifactExporter:
         relative_img_name = image_path.name
 
         # 1. Write post.md
+        source_link = f"[{story.url}]({story.url})" if story.url.startswith("http") else story.url
+        hn_link = f"[{story.hn_url}]({story.hn_url})" if story.hn_url.startswith("http") else story.hn_url
+
         post_md_content = f"""# {story.title}
 
 ## LinkedIn Caption
@@ -31,8 +34,8 @@ class ArtifactExporter:
 {hashtag_str}
 
 ---
-- **Source Article**: [{story.url}]({story.url})
-- **Hacker News Discussion**: [{story.hn_url}]({story.hn_url})
+- **Source Article**: {source_link}
+- **Discussion/Ref**: {hn_link}
 - **Author**: {story.author}
 - **Score**: {story.score} points | {story.comments_count} comments
 - **Tone**: {tone.capitalize()}

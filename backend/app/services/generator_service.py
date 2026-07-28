@@ -27,31 +27,50 @@ class GeneratorService:
         source_name: str = "Hacker News",
         tone: str = "professional",
         provider_name: Optional[str] = None,
-        model_name: Optional[str] = None
+        model_name: Optional[str] = None,
+        custom_title: Optional[str] = None,
+        custom_url: Optional[str] = None
     ) -> PostResponse:
-        # 1. Resolve correct fetcher (auto-detect CNET from story_id prefix)
-        if story_id and story_id.startswith("cnet_"):
-            source_name = "cnet"
+        # 1. Resolve target story or create custom self story
+        if custom_title or source_name.lower() in ["self", "custom"]:
+            title = (custom_title or "").strip() or "Self-authored Post"
+            url = (custom_url or "").strip() or "self"
+            target_story = Story(
+                id=f"custom_{int(datetime.utcnow().timestamp())}",
+                title=title,
+                url=url,
+                hn_url=url,
+                author="Self",
+                score=0,
+                comments_count=0,
+                source_name="self"
+            )
+        else:
+            if story_id and story_id.startswith("cnet_"):
+                source_name = "cnet"
 
-        fetcher = source_registry.get(source_name)
-        trending_stories = await fetcher.fetch_trending_stories(limit=25)
+            fetcher = source_registry.get(source_name)
+            trending_stories = await fetcher.fetch_trending_stories(limit=25)
 
-        target_story: Optional[Story] = None
-        if story_id:
-            for s in trending_stories:
-                if s.id == story_id:
-                    target_story = s
-                    break
+            target_story: Optional[Story] = None
+            if story_id:
+                for s in trending_stories:
+                    if s.id == story_id:
+                        target_story = s
+                        break
 
-        if not target_story:
-            if not trending_stories:
-                raise RuntimeError("Failed to fetch stories from news source.")
-            target_story = trending_stories[0]  # Pick top story
-
+            if not target_story:
+                if not trending_stories:
+                    raise RuntimeError("Failed to fetch stories from news source.")
+                target_story = trending_stories[0]  # Pick top story
 
         # 2. Scrape article content & OpenGraph metadata
-        scraped_data = await ArticleScraper.scrape(target_story.url)
-        content = scraped_data.get("content", "")
+        if target_story.url == "self" or not target_story.url.startswith(("http://", "https://")):
+            scraped_data = {"content": target_story.title, "og_image": None, "site_name": "self"}
+        else:
+            scraped_data = await ArticleScraper.scrape(target_story.url)
+
+        content = scraped_data.get("content", "") or target_story.title
         og_image_url = scraped_data.get("og_image")
         publication = scraped_data.get("site_name") or target_story.source_name
 
