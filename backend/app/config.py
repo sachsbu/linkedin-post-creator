@@ -15,12 +15,14 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str
     OPENAI_MODEL: str
     OLLAMA_MODEL: str
+    LMSTUDIO_MODEL: str = "google/gemma-4-12b-qat"
     TEMPERATURE: float
     
     # API Keys & Endpoints (loaded directly from .env)
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OLLAMA_BASE_URL: str = ""
+    LMSTUDIO_URL: str = "http://localhost:1234/v1/chat/completions"
     HN_API_BASE: str = "https://hacker-news.firebaseio.com/v0"
     
     # LinkedIn Auto-Publish Settings

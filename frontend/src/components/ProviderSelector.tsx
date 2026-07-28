@@ -1,6 +1,6 @@
 import React from 'react';
 import { ProviderOption } from '../types';
-import { Bot, Cpu, Sparkles, Sliders } from 'lucide-react';
+import { Bot, Cpu, Sparkles, Sliders, Monitor } from 'lucide-react';
 
 interface ProviderSelectorProps {
   selectedProvider: ProviderOption;
@@ -11,7 +11,8 @@ const PROVIDERS: { id: ProviderOption; label: string; icon: React.FC<{ className
   { id: 'default', label: 'Default (.env)', icon: Sliders, desc: 'Use .env setting' },
   { id: 'gemini', label: 'Gemini', icon: Sparkles, desc: 'Google Gemini' },
   { id: 'openai', label: 'OpenAI', icon: Bot, desc: 'GPT-4o Mini' },
-  { id: 'ollama', label: 'Ollama', icon: Cpu, desc: 'Local Llama' },
+  { id: 'ollama', label: 'Ollama', icon: Cpu, desc: 'Local Ollama' },
+  { id: 'lmstudio', label: 'LM Studio', icon: Monitor, desc: 'Local LMStudio' },
 ];
 
 export const ProviderSelector: React.FC<ProviderSelectorProps> = ({ selectedProvider, onSelectProvider }) => {
@@ -20,7 +21,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({ selectedProv
       <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
         AI Provider Engine
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {PROVIDERS.map((p) => {
           const Icon = p.icon;
           const active = selectedProvider === p.id;

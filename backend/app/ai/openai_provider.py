@@ -8,7 +8,7 @@ from app.ai.base import BaseLLMProvider
 from app.ai.gemini_provider import GeminiProvider
 
 from app.prompts.summary_prompt import SUMMARY_SYSTEM_PROMPT, SUMMARY_USER_PROMPT
-from app.prompts.linkedin_prompt import LINKEDIN_SYSTEM_PROMPT, LINKEDIN_USER_PROMPT
+from app.prompts.linkedin_prompt import get_linkedin_system_prompt, get_linkedin_user_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +79,10 @@ class OpenAIProvider(BaseLLMProvider):
         title: str,
         summary: ArticleSummary,
         source_url: str,
-        tone: str = "professional"
+        tone: str
     ) -> Dict[str, Any]:
-        user_prompt = LINKEDIN_USER_PROMPT.format(
+        system_prompt = get_linkedin_system_prompt(tone)
+        user_prompt = get_linkedin_user_prompt(
             title=title,
             tone=tone,
             source_url=source_url,
@@ -92,7 +93,7 @@ class OpenAIProvider(BaseLLMProvider):
         )
 
         try:
-            raw_text = await self._call_openai_api(LINKEDIN_SYSTEM_PROMPT, user_prompt)
+            raw_text = await self._call_openai_api(system_prompt, user_prompt)
             data = json.loads(raw_text)
             caption = data.get("caption", "").strip()
             raw_hashtags = data.get("hashtags", [])

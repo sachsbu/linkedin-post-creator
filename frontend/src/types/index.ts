@@ -41,5 +41,5 @@ export interface PostResponse {
 }
 
 export type ToneOption = 'professional' | 'founder' | 'developer' | 'investor';
-export type ProviderOption = 'default' | 'gemini' | 'openai' | 'ollama';
+export type ProviderOption = 'default' | 'gemini' | 'openai' | 'ollama' | 'lmstudio';
 

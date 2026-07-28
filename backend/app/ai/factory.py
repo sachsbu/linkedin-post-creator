@@ -4,6 +4,7 @@ from app.ai.base import BaseLLMProvider
 from app.ai.gemini_provider import GeminiProvider
 from app.ai.openai_provider import OpenAIProvider
 from app.ai.ollama_provider import OllamaProvider
+from app.ai.lmstudio_provider import LMStudioProvider
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,10 @@ class AIFactory:
             selected_model = model or settings.OLLAMA_MODEL
             logger.info(f"Instantiating Ollama Provider (model: {selected_model})")
             return OllamaProvider(model=selected_model)
+        elif name in ["lmstudio", "lm_studio", "lm-studio"]:
+            selected_model = model or settings.LMSTUDIO_MODEL
+            logger.info(f"Instantiating LMStudio Provider (model: {selected_model})")
+            return LMStudioProvider(model=selected_model)
         elif name == "gemini":
             selected_model = model or settings.GEMINI_MODEL
             logger.info(f"Instantiating Gemini Provider (model: {selected_model})")
@@ -35,5 +40,7 @@ class AIFactory:
                 return OpenAIProvider(model=model or settings.OPENAI_MODEL)
             elif env_provider == "ollama":
                 return OllamaProvider(model=model or settings.OLLAMA_MODEL)
+            elif env_provider in ["lmstudio", "lm_studio", "lm-studio"]:
+                return LMStudioProvider(model=model or settings.LMSTUDIO_MODEL)
             else:
                 return GeminiProvider(model=model or settings.GEMINI_MODEL)

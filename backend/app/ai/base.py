@@ -19,10 +19,10 @@ class BaseLLMProvider(ABC):
         title: str,
         summary: ArticleSummary,
         source_url: str,
-        tone: str = "professional"
+        tone: str
     ) -> Dict[str, Any]:
         """
-        Generates engaging LinkedIn post (hook, 2-4 short paragraphs, practical insight, CTA)
+        Generates engaging LinkedIn post (hook, 3-4 short paragraphs, practical insight, CTA)
         max 180 words, plus 5-8 relevant hashtags.
         Returns dict with keys: 'caption', 'hashtags', 'word_count'.
         """
