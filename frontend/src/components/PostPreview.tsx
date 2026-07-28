@@ -73,9 +73,12 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
     }
   };
 
-  const imgUrl = post.image_path.startsWith('http')
-    ? post.image_path
-    : `/output/${post.output_folder.split(/[\\/]/).pop()}/${post.image_path.split(/[\\/]/).pop()}`;
+  const hasImage = Boolean(post.image_path && post.image_path.trim() && post.image_type !== 'none');
+  const imgUrl = hasImage
+    ? (post.image_path.startsWith('http')
+        ? post.image_path
+        : `/output/${post.output_folder.split(/[\\/]/).pop()}/${post.image_path.split(/[\\/]/).pop()}`)
+    : null;
 
   return (
     <div className="flex flex-col space-y-6">

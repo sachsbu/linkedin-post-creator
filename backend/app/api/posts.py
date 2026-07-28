@@ -32,7 +32,8 @@ async def generate_post(
             provider_name=req.provider,
             model_name=req.model,
             custom_title=req.custom_title,
-            custom_url=req.custom_url
+            custom_url=req.custom_url,
+            generate_image=req.generate_image
         )
 
         return res

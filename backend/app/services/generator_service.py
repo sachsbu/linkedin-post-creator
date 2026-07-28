@@ -29,7 +29,8 @@ class GeneratorService:
         provider_name: Optional[str] = None,
         model_name: Optional[str] = None,
         custom_title: Optional[str] = None,
-        custom_url: Optional[str] = None
+        custom_url: Optional[str] = None,
+        generate_image: bool = False
     ) -> PostResponse:
         # 1. Resolve target story or create custom self story
         if custom_title or source_name.lower() in ["self", "custom"]:
@@ -100,11 +101,13 @@ class GeneratorService:
         folder_slug = f"{timestamp_str}_{self._slugify(target_story.title)}"
         output_dir = settings.OUTPUT_FOLDER / folder_slug
 
+        # Use real OG image if available; if missing/invalid, generate synthetic image card
         image_path, image_type = await ImageService.resolve_or_generate_image(
             og_image_url=og_image_url,
             title=target_story.title,
             publication=publication,
-            output_dir=output_dir
+            output_dir=output_dir,
+            generate_custom_fallback=True
         )
 
         # 6. Write post.md, post.txt, metadata.json artifacts
@@ -138,7 +141,7 @@ class GeneratorService:
             hashtags=",".join(hashtags),
             word_count=word_count,
             tone=tone,
-            image_path=str(image_path),
+            image_path=str(image_path) if image_path else "",
             image_type=image_type,
             output_folder=str(output_dir),
             model_used=llm.provider_name,

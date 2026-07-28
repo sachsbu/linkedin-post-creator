@@ -28,6 +28,7 @@ class GeneratePostRequest(BaseModel):
     model: Optional[str] = None
     custom_url: Optional[str] = None
     custom_title: Optional[str] = None
+    generate_image: bool = False
 
 
 class PostResponse(BaseModel):

@@ -17,7 +17,8 @@ export const generatePost = async (
   source?: string,
   model?: string,
   customTitle?: string,
-  customUrl?: string
+  customUrl?: string,
+  generateImage: boolean = false
 ): Promise<PostResponse> => {
   const providerParam = provider === 'default' ? undefined : provider;
   const response = await axios.post<PostResponse>(`${API_BASE}/posts/generate`, {
@@ -27,7 +28,8 @@ export const generatePost = async (
     provider: providerParam,
     model,
     custom_title: customTitle,
-    custom_url: customUrl
+    custom_url: customUrl,
+    generate_image: generateImage
   });
   return response.data;
 };

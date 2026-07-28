@@ -13,12 +13,13 @@ class ImageService:
         og_image_url: Optional[str],
         title: str,
         publication: str,
-        output_dir: Path
-    ) -> Tuple[Path, str]:
+        output_dir: Path,
+        generate_custom_fallback: bool = True
+    ) -> Tuple[Optional[Path], str]:
         """
         Attempts to download the OpenGraph image.
-        If unavailable or invalid, generates a sleek tech social card.
-        Returns tuple of (Image File Path, Image Type ['og_image' or 'generated_card']).
+        If unavailable or invalid, generates a sleek synthetic tech social card.
+        Returns tuple of (Optional[Path], Image Type ['og_image', 'generated_card', or 'none']).
         """
         output_dir.mkdir(parents=True, exist_ok=True)
         
@@ -39,16 +40,20 @@ class ImageService:
             except Exception as e:
                 logger.warning(f"Failed to download/verify OG image ({og_image_url}): {e}")
 
-        # 2. Fallback: Generate custom high-res social card card (1200x630)
-        card_path = output_dir / "social_card.png"
-        ImageService.generate_social_card(title, publication, card_path)
-        return card_path, "generated_card"
+        # 2. Fallback: Generate custom high-res social card (1200x630) ONLY if requested
+        if generate_custom_fallback:
+            card_path = output_dir / "social_card.png"
+            ImageService.generate_social_card(title, publication, card_path)
+            return card_path, "generated_card"
+
+        return None, "none"
 
     @staticmethod
     def generate_social_card(title: str, publication: str, save_path: Path):
         """
         Generates a modern, clean 1200x630 social card for social media sharing.
         """
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         width, height = 1200, 630
         image = Image.new("RGB", (width, height), color="#0F172A")  # Slate 900
         draw = ImageDraw.Draw(image)
@@ -83,14 +88,10 @@ class ImageService:
             font_tag = ImageFont.load_default()
             font_sub = ImageFont.load_default()
 
-        # Badge: TECH NEWS
-        badge_box = [margin + 40, margin + 40, margin + 220, margin + 85]
+        # Badge: UVERA INSIGHT
+        badge_box = [margin + 40, margin + 40, margin + 270, margin + 85]
         draw.rectangle(badge_box, fill="#1E293B", outline="#0EA5E9", width=1)
-        draw.text((margin + 55, margin + 50), "TECH NEWS", fill="#38BDF8", font=font_tag)
-
-        # Publication Name / Source
-        pub_text = f"SOURCE: {publication.upper() if publication else 'HACKER NEWS'}"
-        draw.text((width - margin - 350, margin + 52), pub_text, fill="#94A3B8", font=font_sub)
+        draw.text((margin + 55, margin + 50), "UVERA INSIGHT", fill="#38BDF8", font=font_tag)
 
         # Wrap Title Text
         max_width_px = width - (margin * 2) - 80
@@ -105,8 +106,7 @@ class ImageService:
         # Footer / Branding
         footer_y = height - margin - 60
         draw.line([(margin + 40, footer_y - 20), (width - margin - 40, footer_y - 20)], fill="#334155", width=1)
-        draw.text((margin + 40, footer_y), "AUTOMATED TECH SUMMARY", fill="#64748B", font=font_sub)
-        draw.text((width - margin - 260, footer_y), "LINKEDIN POST CREATOR", fill="#38BDF8", font=font_sub)
+        draw.text((margin + 40, footer_y), "UVERA INSIGHT", fill="#38BDF8", font=font_sub)
 
         image.save(save_path, "PNG")
         logger.info(f"Generated social card saved to {save_path}")

@@ -89,7 +89,12 @@ export const App: React.FC = () => {
         const storyToUse = targetStory || selectedStory || stories[0];
         if (!storyToUse) return;
         const storySource = storyToUse.source_name.toLowerCase().includes('cnet') ? 'cnet' : newsSource;
-        const result = await generatePost(storyToUse.id, tone, provider, storySource);
+        const result = await generatePost(
+          storyToUse.id,
+          tone,
+          provider,
+          storySource
+        );
         setCurrentPost(result);
       }
       loadHistory();

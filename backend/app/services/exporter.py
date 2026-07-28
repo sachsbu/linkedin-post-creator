@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.models.domain import Story, ArticleSummary
 
 class ArtifactExporter:
@@ -12,14 +12,16 @@ class ArtifactExporter:
         summary: ArticleSummary,
         caption: str,
         hashtags: List[str],
-        image_path: Path,
+        image_path: Optional[Path],
         image_type: str,
         tone: str,
         model_used: str
     ) -> Dict[str, Path]:
         output_dir.mkdir(parents=True, exist_ok=True)
         hashtag_str = " ".join(hashtags)
-        relative_img_name = image_path.name
+        relative_img_name = image_path.name if image_path else ""
+        resolved_img_path = str(image_path.resolve()) if image_path else ""
+        img_md_line = f"- **Image**: `![Card]({relative_img_name})`" if image_path else "- **Image**: None"
 
         # 1. Write post.md
         source_link = f"[{story.url}]({story.url})" if story.url.startswith("http") else story.url
@@ -39,7 +41,7 @@ class ArtifactExporter:
 - **Author**: {story.author}
 - **Score**: {story.score} points | {story.comments_count} comments
 - **Tone**: {tone.capitalize()}
-- **Image**: `![Card]({relative_img_name})`
+{img_md_line}
 """
         post_md_file = output_dir / "post.md"
         post_md_file.write_text(post_md_content, encoding="utf-8")
@@ -70,7 +72,7 @@ class ArtifactExporter:
             },
             "image": {
                 "filename": relative_img_name,
-                "path": str(image_path.resolve()),
+                "path": resolved_img_path,
                 "type": image_type
             },
             "generation": {
