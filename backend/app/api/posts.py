@@ -17,6 +17,7 @@ from app.models.db_models import PostDB
 from app.platforms.registry import platform_registry
 from app.services.exporter import ArtifactExporter
 from app.services.linkedin_publisher import LinkedInPublisherService
+from app.services.instagram_publisher import InstagramPublisherService
 
 router = APIRouter(prefix="/api/posts", tags=["Posts"])
 
@@ -191,4 +192,38 @@ async def publish_to_linkedin(
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LinkedIn Publishing error: {str(e)}")
+
+
+@router.post("/{post_id}/publish_instagram")
+async def publish_to_instagram(
+    post_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Publishes post or Reel directly to your Instagram Business/Creator handle via Meta Graph API.
+    """
+    stmt = select(PostDB).where(PostDB.id == post_id)
+    res = await db.execute(stmt)
+    post = res.scalar_one_or_none()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found in database")
+
+    hashtags = [h.strip() for h in (post.hashtags or "").split(",") if h.strip()]
+
+    try:
+        publish_res = await InstagramPublisherService.publish_to_instagram(
+            caption=post.linkedin_caption,  # caption is stored in linkedin_caption field in DB
+            hashtags=hashtags,
+            media_url_or_path=post.image_path,
+            media_type=post.image_type or "image"
+        )
+        return publish_res
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Instagram Publishing Exception: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Instagram Publishing error: {str(e)}")
+
 

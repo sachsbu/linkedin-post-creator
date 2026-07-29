@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Copy, Download, Check, Sparkles, Instagram, Hash, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { Copy, Download, Check, Sparkles, Instagram, Hash, Image as ImageIcon, Video as VideoIcon, Send, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { InstagramPostResponse } from '../types';
+import { publishPostToInstagram } from '../api/client';
 
 interface InstagramPreviewProps {
   post: InstagramPostResponse | null;
@@ -9,6 +10,8 @@ interface InstagramPreviewProps {
 
 export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGenerating }) => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [publishResult, setPublishResult] = useState<{ status: 'success' | 'error'; message: string } | null>(null);
 
   if (isGenerating) {
     return (
@@ -60,6 +63,34 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  const handlePublishToInstagram = async () => {
+    if (!post.id) {
+      setPublishResult({
+        status: 'error',
+        message: 'Post ID is required. Please re-generate the post.'
+      });
+      return;
+    }
+
+    setIsPublishing(true);
+    setPublishResult(null);
+
+    try {
+      const res = await publishPostToInstagram(post.id);
+      setPublishResult({
+        status: 'success',
+        message: res.message || 'Successfully published to your Instagram handle!'
+      });
+    } catch (err: any) {
+      setPublishResult({
+        status: 'error',
+        message: err?.response?.data?.detail || 'Failed to publish to Instagram. Verify INSTAGRAM_BUSINESS_ACCOUNT_ID and INSTAGRAM_ACCESS_TOKEN in .env.'
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   // Resolve media URL for display
@@ -125,6 +156,7 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
                 <span>Generated Caption (Max 2 Sentences)</span>
               </span>
               <button
+                type="button"
                 onClick={() => handleCopy(post.caption, 'caption')}
                 className="flex items-center space-x-1 text-[11px] text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded transition-colors"
               >
@@ -145,6 +177,7 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
                 <span>Dynamic Hashtags ({post.hashtags.length})</span>
               </span>
               <button
+                type="button"
                 onClick={() => handleCopy(post.hashtags.join(' '), 'hashtags')}
                 className="flex items-center space-x-1 text-[11px] text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded transition-colors"
               >
@@ -166,10 +199,32 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
         </div>
       </div>
 
+      {/* Publish Feedback Alert */}
+      {publishResult && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-start space-x-2.5 transition-all ${
+            publishResult.status === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}
+        >
+          {publishResult.status === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1 space-y-0.5">
+            <p className="font-semibold">{publishResult.status === 'success' ? 'Publishing Success' : 'Publishing Error'}</p>
+            <p className="text-[11px] text-slate-300 leading-relaxed">{publishResult.message}</p>
+          </div>
+        </div>
+      )}
+
       {/* Action Buttons Toolbar */}
       <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
             onClick={() => handleCopy(post.caption, 'caption')}
             className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
           >
@@ -178,6 +233,7 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
           </button>
 
           <button
+            type="button"
             onClick={() => handleCopy(post.hashtags.join(' '), 'hashtags')}
             className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
           >
@@ -186,22 +242,40 @@ export const InstagramPreview: React.FC<InstagramPreviewProps> = ({ post, isGene
           </button>
 
           <button
+            type="button"
             onClick={() => handleCopy(fullText, 'all')}
             className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
           >
             {copiedSection === 'all' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-sky-400" />}
             <span>Copy All</span>
           </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadTxt}
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5 text-purple-400" />
+            <span>Download .txt</span>
+          </button>
         </div>
 
+        {/* Direct Publish to Handle Button */}
         <button
-          onClick={handleDownloadTxt}
-          className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white text-xs font-bold shadow-md transition-all"
+          type="button"
+          onClick={handlePublishToInstagram}
+          disabled={isPublishing}
+          className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-amber-500 hover:from-pink-400 hover:via-purple-400 hover:to-amber-400 text-white text-xs font-bold shadow-lg shadow-pink-500/20 transition-all disabled:opacity-50"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Download Caption (.txt)</span>
+          {isPublishing ? (
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
+          )}
+          <span>{isPublishing ? 'Publishing to Handle...' : 'Publish to Instagram Handle'}</span>
         </button>
       </div>
     </div>
   );
 };
+

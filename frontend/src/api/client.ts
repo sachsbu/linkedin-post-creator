@@ -75,4 +75,10 @@ export const publishPostToLinkedIn = async (postId: number): Promise<{ status: s
   return response.data;
 };
 
+export const publishPostToInstagram = async (postId: number): Promise<{ status: string; post_id: string; message: string }> => {
+  const response = await axios.post<{ status: string; post_id: string; message: string }>(`${API_BASE}/posts/${postId}/publish_instagram`);
+  return response.data;
+};
+
+
 

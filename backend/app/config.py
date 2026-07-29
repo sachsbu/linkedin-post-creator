@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     LINKEDIN_ORGANIZATION_ID: str = ""
 
     # Instagram Settings
+    INSTAGRAM_BUSINESS_ACCOUNT_ID: str = ""
+    INSTAGRAM_ACCESS_TOKEN: str = ""
     INSTAGRAM_MAX_IMAGE_SIZE_MB: float = 10.0
     INSTAGRAM_MAX_VIDEO_SIZE_MB: float = 50.0
     INSTAGRAM_ALLOWED_IMAGE_FORMATS: list = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
