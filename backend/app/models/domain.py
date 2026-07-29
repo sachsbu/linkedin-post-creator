@@ -92,3 +92,8 @@ class InstagramPostResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BatchDeleteRequest(BaseModel):
+    post_ids: List[int]
+
+
+

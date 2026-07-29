@@ -12,11 +12,31 @@ from app.ai.gemini_provider import GeminiProvider
 
 logger = logging.getLogger(__name__)
 
+
+def _clean_json_text(text: str) -> str:
+    if not text:
+        return "{}"
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+
+    start_idx = cleaned.find("{")
+    end_idx = cleaned.rfind("}")
+    if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+        cleaned = cleaned[start_idx:end_idx + 1]
+
+    return cleaned if cleaned else "{}"
+
+
 class OllamaProvider(BaseLLMProvider):
     def __init__(self, base_url: str = None, model: str = None):
-        self.base_url = base_url or settings.OLLAMA_BASE_URL
-        self.model = model or settings.OLLAMA_MODEL or "llama3"
-
+        self.base_url = (base_url or settings.OLLAMA_BASE_URL or "").strip() or "http://localhost:11434"
+        self.model = (model or settings.OLLAMA_MODEL or "").strip() or "llama3"
 
     @property
     def provider_name(self) -> str:
@@ -34,11 +54,25 @@ class OllamaProvider(BaseLLMProvider):
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, json=payload)
-            if response.status_code != 200:
-                raise RuntimeError(f"Ollama API error ({response.status_code}): {response.text}")
-            data = response.json()
-            return data.get("response", "")
+            try:
+                response = await client.post(url, json=payload)
+                if response.status_code != 200:
+                    logger.warning(f"Ollama json format mode returned status {response.status_code}. Retrying without format=json.")
+                    payload_no_format = {k: v for k, v in payload.items() if k != "format"}
+                    response = await client.post(url, json=payload_no_format)
+
+                if response.status_code != 200:
+                    raise RuntimeError(f"Ollama API error ({response.status_code}): {response.text}")
+
+                data = response.json()
+                return data.get("response", "")
+            except httpx.ConnectError:
+                err_msg = f"Could not connect to local Ollama server at {self.base_url}. Please verify Ollama is running (`ollama serve`)."
+                logger.error(err_msg)
+                raise RuntimeError(err_msg)
+            except Exception as e:
+                logger.error(f"Ollama API request error: {e}")
+                raise
 
     async def summarize_article(self, title: str, content: str, source_url: str) -> ArticleSummary:
         user_prompt = SUMMARY_USER_PROMPT.format(
@@ -49,7 +83,8 @@ class OllamaProvider(BaseLLMProvider):
 
         try:
             raw_text = await self._call_ollama_api(SUMMARY_SYSTEM_PROMPT, user_prompt)
-            data = json.loads(raw_text)
+            cleaned = _clean_json_text(raw_text)
+            data = json.loads(cleaned)
             return ArticleSummary(
                 what_happened=data.get("what_happened", title),
                 why_it_matters=data.get("why_it_matters", "Significant tech development."),
@@ -85,7 +120,7 @@ class OllamaProvider(BaseLLMProvider):
 
         try:
             raw_text = await self._call_ollama_api(system_prompt, user_prompt)
-            data = json.loads(raw_text)
+            data = json.loads(_clean_json_text(raw_text))
             caption = data.get("caption", "").strip()
             raw_hashtags = data.get("hashtags", [])
             hashtags = GeminiProvider.sanitize_hashtags(raw_hashtags, title)
@@ -114,7 +149,7 @@ class OllamaProvider(BaseLLMProvider):
 
         try:
             raw_text = await self._call_ollama_api(system_prompt, user_prompt)
-            data = json.loads(raw_text)
+            data = json.loads(_clean_json_text(raw_text))
             caption = data.get("caption", "").strip()
             raw_hashtags = data.get("hashtags", [])
             hashtags = GeminiProvider.sanitize_instagram_hashtags(raw_hashtags, prompt)

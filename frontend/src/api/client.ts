@@ -80,5 +80,20 @@ export const publishPostToInstagram = async (postId: number): Promise<{ status: 
   return response.data;
 };
 
+export const deletePost = async (postId: number): Promise<{ status: string; message: string }> => {
+  const response = await axios.delete<{ status: string; message: string }>(`${API_BASE}/posts/${postId}`);
+  return response.data;
+};
+
+export const deletePostsBatch = async (postIds: number[]): Promise<{ status: string; deleted_count: number; message: string }> => {
+  const response = await axios.request<{ status: string; deleted_count: number; message: string }>({
+    method: 'DELETE',
+    url: `${API_BASE}/posts/batch/delete`,
+    data: { post_ids: postIds }
+  });
+  return response.data;
+};
+
+
 
 

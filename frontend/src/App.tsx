@@ -74,7 +74,6 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadStories();
     loadHistory();
   }, []);
 
@@ -163,9 +162,7 @@ export const App: React.FC = () => {
                     <select
                       value={newsSource}
                       onChange={(e) => {
-                        const newSource = e.target.value;
-                        setNewsSource(newSource);
-                        loadStories(newSource);
+                        setNewsSource(e.target.value);
                       }}
                       className="bg-slate-800 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
                     >
@@ -173,18 +170,20 @@ export const App: React.FC = () => {
                       <option value="cnet">CNET Tech News</option>
                       <option value="self">Custom Title (Self)</option>
                     </select>
-                    {newsSource !== 'self' && (
-                      <button
-                        onClick={() => loadStories(newsSource)}
-                        disabled={isFetchingStories}
-                        className="flex items-center space-x-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
-                        <span>Fetch</span>
-                      </button>
-                    )}
                   </div>
                 </div>
+
+                {newsSource !== 'self' && (
+                  <button
+                    type="button"
+                    onClick={() => loadStories(newsSource)}
+                    disabled={isFetchingStories}
+                    className="w-full py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
+                    <span>{isFetchingStories ? 'Fetching Ranked Stories...' : `Load Ranked Stories (${newsSource === 'cnet' ? 'CNET' : 'Hacker News'})`}</span>
+                  </button>
+                )}
 
                 {/* Custom Title Input Field */}
                 <div className="space-y-1.5">
@@ -213,6 +212,7 @@ export const App: React.FC = () => {
                 <ToneSelector selectedTone={tone} onSelectTone={setTone} />
 
                 <button
+                  type="button"
                   onClick={() => handleGenerateLinkedIn()}
                   disabled={
                     isGenerating ||
@@ -256,9 +256,24 @@ export const App: React.FC = () => {
                         Type your post title or topic in the title input box above and click &quot;Generate Post from Title (Self)&quot;.
                       </p>
                     </div>
-                  ) : isFetchingStories && stories.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 text-sm">
-                      Loading trending stories...
+                  ) : stories.length === 0 ? (
+                    <div className="text-center py-12 px-4 text-slate-400 text-xs space-y-3 border border-dashed border-slate-800 rounded-xl">
+                      <div className="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto text-sky-400">
+                        <Newspaper className="w-5 h-5" />
+                      </div>
+                      <p className="font-semibold text-slate-200">Ranked Stories Not Loaded</p>
+                      <p className="text-slate-500 max-w-xs mx-auto">
+                        Click the button below to fetch and rank live front-page stories from {newsSource === 'cnet' ? 'CNET Tech News' : 'Hacker News'}.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => loadStories(newsSource)}
+                        disabled={isFetchingStories}
+                        className="px-4 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all flex items-center space-x-2 mx-auto disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
+                        <span>{isFetchingStories ? 'Loading Stories...' : 'Load Ranked Stories'}</span>
+                      </button>
                     </div>
                   ) : (
                     stories.map((story) => (
@@ -324,6 +339,7 @@ export const App: React.FC = () => {
         onClose={() => setIsHistoryOpen(false)}
         history={history}
         onSelectPost={(post) => setCurrentPost(post)}
+        onRefreshHistory={loadHistory}
       />
 
       <ExportModal

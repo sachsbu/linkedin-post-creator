@@ -1,3 +1,4 @@
+import shutil
 from typing import List, Optional
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -11,7 +12,8 @@ from app.models.domain import (
     PostResponse,
     ArticleSummary,
     GenerateInstagramPostRequest,
-    InstagramPostResponse
+    InstagramPostResponse,
+    BatchDeleteRequest
 )
 from app.models.db_models import PostDB
 from app.platforms.registry import platform_registry
@@ -99,6 +101,7 @@ async def get_post_history(
         responses.append(
             PostResponse(
                 id=p.id,
+                platform=getattr(p, "platform", "linkedin") or "linkedin",
                 story_id=p.story_id,
                 source_name=p.source_name,
                 title=p.title,
@@ -225,5 +228,68 @@ async def publish_to_instagram(
         import logging
         logging.getLogger(__name__).error(f"Instagram Publishing Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Instagram Publishing error: {str(e)}")
+
+
+@router.delete("/batch/delete")
+async def delete_posts_batch(
+    req: BatchDeleteRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Deletes multiple posts from SQLite database and removes generated files from local disk.
+    """
+    if not req.post_ids:
+        return {"status": "success", "deleted_count": 0}
+
+    stmt = select(PostDB).where(PostDB.id.in_(req.post_ids))
+    res = await db.execute(stmt)
+    posts = res.scalars().all()
+
+    count = 0
+    for p in posts:
+        if p.output_folder:
+            folder_path = Path(p.output_folder)
+            if folder_path.exists() and folder_path.is_dir():
+                try:
+                    shutil.rmtree(folder_path)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Could not remove folder {folder_path}: {e}")
+        await db.delete(p)
+        count += 1
+
+    await db.commit()
+    return {"status": "success", "deleted_count": count, "message": f"{count} posts deleted successfully from DB and local disk."}
+
+
+@router.delete("/{post_id}")
+async def delete_post(
+    post_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Deletes a single post from SQLite database and removes generated output files from local disk.
+    """
+    stmt = select(PostDB).where(PostDB.id == post_id)
+    res = await db.execute(stmt)
+    post = res.scalar_one_or_none()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    if post.output_folder:
+        folder_path = Path(post.output_folder)
+        if folder_path.exists() and folder_path.is_dir():
+            try:
+                shutil.rmtree(folder_path)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Could not remove folder {folder_path}: {e}")
+
+    await db.delete(post)
+    await db.commit()
+
+    return {"status": "success", "message": f"Post {post_id} deleted successfully from database and local storage."}
+
 
 

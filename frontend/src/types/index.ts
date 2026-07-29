@@ -20,6 +20,7 @@ export interface ArticleSummary {
 
 export interface PostResponse {
   id: number;
+  platform?: string;
   story_id: string;
   source_name: string;
   title: string;

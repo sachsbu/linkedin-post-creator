@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str
     GEMINI_MODEL: str
     OPENAI_MODEL: str
-    OLLAMA_MODEL: str
+    OLLAMA_MODEL: str = "llama3"
     LMSTUDIO_MODEL: str = "google/gemma-4-12b-qat"
-    TEMPERATURE: float
+    TEMPERATURE: float = 0.7
     
     # API Keys & Endpoints (loaded directly from .env)
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    OLLAMA_BASE_URL: str = ""
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
     LMSTUDIO_URL: str = "http://localhost:1234/v1/chat/completions"
     HN_API_BASE: str = "https://hacker-news.firebaseio.com/v0"
     
