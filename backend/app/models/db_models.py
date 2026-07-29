@@ -8,6 +8,7 @@ class PostDB(Base):
     __tablename__ = "posts"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    platform = Column(String, default="linkedin", index=True)
     story_id = Column(String, index=True)
     source_name = Column(String, default="Hacker News")
     title = Column(String)

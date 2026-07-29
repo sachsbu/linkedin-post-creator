@@ -1,142 +1,113 @@
-# Automated LinkedIn Tech Post Generator
+# AI Social Post Generator (Multi-Platform Studio)
 
-An automated, clean-architecture application that discovers trending technology news from Hacker News (and pluggable sources), extracts key insights, summarizes content, and generates professional, high-converting LinkedIn posts (under 180 words, dynamic 5–8 hashtags, multiple writing tones) complete with social media card graphics and complete export artifacts.
+An automated, clean-architecture application that generates engaging, high-converting social media content across multiple platforms (**LinkedIn** and **Instagram**, with extensible architecture for **X/Twitter**, **Facebook**, **Threads**, **Medium**, and **Dev.to**).
 
 ---
 
-## Architecture Diagram
+## Architecture Diagram & Strategy Pattern
 
 ```mermaid
 graph TD
-    UI[React Frontend Studio] -->|REST API / Axios| API[FastAPI Backend]
+    Client[React Frontend Studio] -->|Platform Switcher| StrategyFactory[Platform Strategy Registry]
+    
+    StrategyFactory -->|LinkedIn Strategy| LinkedInGen[LinkedInGenerator]
+    StrategyFactory -->|Instagram Strategy| InstagramGen[InstagramGenerator]
+    StrategyFactory -.->|Extensible Future Strategies| FutureGen[Twitter / FB / Threads / Medium / Dev.to]
 
-    subgraph Core Backend Services
-        API --> SM[Source Manager & Pluggable Fetchers]
-        API --> LLM[LLM Abstraction Layer]
-        API --> IS[Image & Social Card Service]
-        API --> PG[Post Generator & Artifact Exporter]
-        API --> DB[(SQLite Database)]
+    LinkedInGen --> NewsScraper[News Scraping & Ranking]
+    LinkedInGen --> LLM[LLM Abstraction Layer]
 
-        SM --> HN[HackerNews Fetcher]
-        SM --> EXT[Pluggable Sources: TechCrunch, Reddit, DevTo]
+    InstagramGen --> MediaVal[MediaValidationService]
+    InstagramGen --> LLM
 
-        LLM --> GEM[Gemini Provider]
-        LLM --> OAI[OpenAI Provider]
-        LLM --> OLL[Ollama Provider]
-    end
+    MediaVal --> ImageVal[Aspect Ratio 1:1 / 4:5 / 1.91:1 & Crop Warnings]
+    MediaVal --> VideoVal[MP4/MOV & Duration <= 90s Check]
 
-    IS --> OG[OpenGraph Image Extractor]
-    IS --> PIL[Pillow Social Card Generator]
-
-    PG --> OUT[Artifact Output: post.md, post.txt, metadata.json, image.png]
+    LLM --> PromptEngine[Platform Prompt Engine]
+    PromptEngine --> Output[Post Caption, Hashtags & Export Artifacts]
 ```
 
 ---
 
-## Features
+## Supported Social Platforms
 
-- **Hacker News Live Discovery & Ranking**: Automatically ranks front-page stories balancing score, comment density, and exponential recency decay.
-- **AI Layer Abstraction**: Polymorphic LLM integration supporting Google Gemini, OpenAI (GPT-4o), and local Ollama models.
-- **Multi-Tone Writing Options**: Customizes output voice for **Professional**, **Founder**, **Developer**, or **Investor** audiences.
-- **Strict Quality Constraints**: Enforces <180 words, compelling non-clickbait hooks, zero AI fluff ("In today's fast-paced digital world..."), and 5–8 dynamic hashtags.
-- **Image Fallback System**: Automatically downloads OpenGraph images or generates a sleek 1200x630 dark-themed social card using Pillow (PIL).
-- **Artifact Exporter**: Saves every generated post into structured output directories containing `post.md`, `post.txt`, `metadata.json`, and image files.
-- **Post History**: Embedded SQLite storage for instant historical post lookup and search.
-- **React Frontend Studio**: Dark-mode desktop interface featuring live LinkedIn card previews, one-click clipboard copying, and export options.
+| Platform | Input Workflow | AI Output Format | Special Features |
+|---|---|---|---|
+| **LinkedIn** (Existing) | Trending News (Hacker News / CNET) or Custom Title + Tone Selection | Professional hook, 2-4 short paragraphs, practical insight, CTA (<180 words), 5-8 topic hashtags | Auto social image card generation, tone personas (Founder, Developer, Investor, Professional), direct publishing |
+| **Instagram** (New) | Media Upload (Image/Reel Video) + Multiline Content Prompt | Creative caption (max 2 concise sentences), friendly/engaging tone, CTA, 8–10 dynamic hashtags | Real-time aspect ratio checks (1:1, 4:5, 1.91:1), crop warnings, video Reel duration validation, prompt sample chips |
+| **X (Twitter)** (Future) | Pluggable Strategy | Single tweet or thread format | Ready for strategy registration |
+| **Facebook / Threads / Medium / Dev.to** (Future) | Pluggable Strategy | Platform-specific writing tone & format | Ready for strategy registration |
 
 ---
 
-## Directory & Folder Structure
+## Key Features & Capabilities
+
+- **Strategy Pattern Architecture**: Modular `SocialPlatformGenerator` interface and `PlatformRegistry` enabling new platforms to be added without major code changes.
+- **Dedicated Prompt Engineering**: Independent prompt modules per platform (`linkedin_prompt.py`, `instagram_prompt.py`).
+- **Media Validation Service**: Reusable `MediaValidationService` inspecting file sizes, JPEG/PNG/WEBP images, aspect ratios (1:1 square, 4:5 portrait, 1.91:1 landscape), crop warnings, and MP4/MOV video Reel durations up to 90 seconds.
+- **Configurable Limits**: Platform settings stored centrally in `config.py` (max image size, max video size, hashtag count ranges, caption length limits).
+- **Multi-Model Support**: Supports Google Gemini, OpenAI (GPT-4o), Ollama local LLMs, and LMStudio out-of-the-box.
+- **Export & Clipboard Options**: Copy caption, copy hashtags, copy all, download `.txt` artifacts.
+
+---
+
+## Folder Structure
 
 ```
 linkedin-post-creator/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                  # FastAPI application & middleware
-│   │   ├── config.py                # Environment & settings configuration
+│   │   ├── main.py                  # FastAPI application & router mounts
+│   │   ├── config.py                # Platform limits & settings configuration
 │   │   ├── database.py              # Async SQLite engine setup
-│   │   ├── models/                  # Domain schemas & DB ORM models
-│   │   ├── sources/                 # Pluggable news sources (Hacker News)
-│   │   ├── scraper/                 # Article scraper & Pillow card generator
-│   │   ├── ai/                      # Gemini, OpenAI, Ollama LLM abstraction
-│   │   ├── prompts/                 # Jinja2 / Python prompt templates
-│   │   ├── services/                # Post generator & artifact exporter
-│   │   └── api/                     # REST API Routers (stories, posts, health)
+│   │   ├── models/                  # Domain schemas, MediaValidationResult & DB ORM models
+│   │   ├── platforms/               # Strategy Pattern platform generators
+│   │   │   ├── base.py              # SocialPlatformGenerator abstract interface
+│   │   │   ├── linkedin.py          # LinkedInGenerator strategy
+│   │   │   ├── instagram.py         # InstagramGenerator strategy
+│   │   │   └── registry.py          # PlatformRegistry factory
+│   │   ├── services/                # MediaValidationService & exporter
+│   │   ├── scraper/                 # Article scraper & image generator
+│   │   ├── ai/                      # Gemini, OpenAI, Ollama, LMStudio providers
+│   │   ├── prompts/                 # Platform prompt modules (linkedin_prompt.py, instagram_prompt.py)
+│   │   └── api/                     # REST API Routers (stories, posts, media, health)
 │   ├── tests/                       # Pytest unit test suite
+│   │   ├── test_media_validation.py # MediaValidationService tests
+│   │   ├── test_instagram_generator.py # Instagram prompt & hashtag tests
+│   │   └── test_platform_strategy.py   # Strategy pattern tests
 │   ├── pytest.ini
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/              # Header, StoryCard, PostPreview, ToneSelector, History
-│   │   ├── api/                     # Axios API client
+│   │   ├── components/              # Header (Platform Tabs), InstagramForm, InstagramPreview, PostPreview
+│   │   ├── api/                     # Axios API client for multi-platform generation & media uploads
 │   │   ├── types/                   # TypeScript interfaces
 │   │   └── App.tsx                  # Studio dashboard
 │   ├── package.json
 │   └── vite.config.ts
-├── sample_output/                   # Sample post deliverable artifacts
-│   ├── post.md
-│   ├── post.txt
-│   ├── metadata.json
-│   └── image.png
 ├── README.md
 └── INSTALLATION.md
 ```
 
 ---
 
-## Extending News Sources (Pluggable Architecture)
+## API Endpoints
 
-Adding a new news source (e.g. TechCrunch, Reddit, GitHub Trending) is straightforward:
-
-1. Create a new class extending `BaseSourceFetcher` in `backend/app/sources/`:
-
-```python
-from app.sources.base import BaseSourceFetcher
-from app.models.domain import Story
-
-class TechCrunchFetcher(BaseSourceFetcher):
-    @property
-    def name(self) -> str:
-        return "TechCrunch"
-
-    async def fetch_trending_stories(self, limit: int = 20) -> list[Story]:
-        # Implement RSS / API fetching logic here
-        return []
-```
-
-2. Register the fetcher in `backend/app/sources/registry.py`:
-
-```python
-from app.sources.techcrunch import TechCrunchFetcher
-source_registry.register(TechCrunchFetcher())
-```
+- `POST /api/posts/generate`: Generate LinkedIn post via `LinkedInGenerator` strategy.
+- `POST /api/posts/instagram/generate`: Generate Instagram caption & 8–10 dynamic hashtags via `InstagramGenerator` strategy.
+- `POST /api/media/upload`: Upload and validate image or video media against Instagram specs.
+- `GET /api/posts/history`: Retrieve history of generated social posts.
 
 ---
 
-## How to Run with `uv`
+## Unit Testing
 
-### 1. Command Line Post Generation (CLI)
-
-Run directly using `uv`:
+Run unit tests via `pytest`:
 
 ```bash
 cd backend
-uv run python -m app.cli --tone developer
+pytest
 ```
-
-Options:
-- `--tone`: `professional` (default), `founder`, `developer`, `investor`
-- `--source`: `hacker_news` (default)
-- `--story-id`: Optional specific Hacker News story ID
-
-### 2. Output Artifacts
-
-Every execution automatically generates artifacts in `output/<timestamp>_<slug>/`:
-- `post.md` (Markdown caption + metadata links)
-- `post.txt` (Clean copy-paste text)
-- `metadata.json` (Structured summary & story parameters)
-- `social_card.png` (High-res 1200x630 social media image)
-
 
 ---
 

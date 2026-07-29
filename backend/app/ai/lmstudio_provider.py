@@ -7,6 +7,7 @@ from app.models.domain import ArticleSummary
 from app.ai.base import BaseLLMProvider
 from app.prompts.summary_prompt import SUMMARY_SYSTEM_PROMPT, SUMMARY_USER_PROMPT
 from app.prompts.linkedin_prompt import get_linkedin_system_prompt, get_linkedin_user_prompt
+from app.prompts.instagram_prompt import get_instagram_system_prompt, get_instagram_user_prompt
 from app.ai.gemini_provider import GeminiProvider
 
 logger = logging.getLogger(__name__)
@@ -158,3 +159,31 @@ class LMStudioProvider(BaseLLMProvider):
                 "hashtags": tags,
                 "word_count": len(fallback_caption.split())
             }
+
+    async def generate_instagram_post(
+        self,
+        prompt: str,
+        media_type: str = "image"
+    ) -> Dict[str, Any]:
+        system_prompt = get_instagram_system_prompt()
+        user_prompt = get_instagram_user_prompt(prompt_idea=prompt, media_type=media_type)
+
+        try:
+            raw_text = await self._call_lmstudio_api(system_prompt, user_prompt)
+            data = json.loads(_clean_json_text(raw_text))
+            caption = data.get("caption", "").strip()
+            raw_hashtags = data.get("hashtags", [])
+            hashtags = GeminiProvider.sanitize_instagram_hashtags(raw_hashtags, prompt)
+            return {
+                "caption": caption,
+                "hashtags": hashtags
+            }
+        except Exception as e:
+            logger.error(f"LMStudio Instagram post generation error: {e}")
+            fallback_caption = f"{prompt.strip()}.\n\nWhat do you think? Let us know below."
+            tags = GeminiProvider.sanitize_instagram_hashtags([], prompt)
+            return {
+                "caption": fallback_caption,
+                "hashtags": tags
+            }
+

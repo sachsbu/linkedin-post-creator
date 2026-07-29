@@ -6,9 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 
 from app.database import get_db
-from app.models.domain import GeneratePostRequest, PostResponse, ArticleSummary
+from app.models.domain import (
+    GeneratePostRequest,
+    PostResponse,
+    ArticleSummary,
+    GenerateInstagramPostRequest,
+    InstagramPostResponse
+)
 from app.models.db_models import PostDB
-from app.services.generator_service import GeneratorService
+from app.platforms.registry import platform_registry
 from app.services.exporter import ArtifactExporter
 from app.services.linkedin_publisher import LinkedInPublisherService
 
@@ -21,10 +27,11 @@ async def generate_post(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Generates a high-quality LinkedIn post for the top story or specified story ID.
+    Generates a high-quality LinkedIn post using the LinkedIn platform strategy.
     """
     try:
-        res = await GeneratorService.generate_post_pipeline(
+        generator = platform_registry.get_generator("linkedin")
+        res = await generator.generate_post(
             db=db,
             story_id=req.story_id,
             source_name=req.source or "hacker_news",
@@ -35,10 +42,37 @@ async def generate_post(
             custom_url=req.custom_url,
             generate_image=req.generate_image
         )
-
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Post generation error: {str(e)}")
+
+
+@router.post("/instagram/generate", response_model=InstagramPostResponse)
+async def generate_instagram_post(
+    req: GenerateInstagramPostRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generates an Instagram caption and 8-10 dynamic hashtags using the Instagram platform strategy.
+    """
+    try:
+        generator = platform_registry.get_generator("instagram")
+        res = await generator.generate_post(
+            db=db,
+            prompt=req.prompt,
+            media_path=req.media_path,
+            media_type=req.media_type,
+            provider_name=req.provider,
+            model_name=req.model
+        )
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Instagram post generation exception: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Instagram post generation error: {str(e)}")
+
 
 @router.get("/history", response_model=List[PostResponse])
 async def get_post_history(

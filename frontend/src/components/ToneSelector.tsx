@@ -26,6 +26,7 @@ export const ToneSelector: React.FC<ToneSelectorProps> = ({ selectedTone, onSele
           const active = selectedTone === t.id;
           return (
             <button
+              type="button"
               key={t.id}
               onClick={() => onSelectTone(t.id)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left ${

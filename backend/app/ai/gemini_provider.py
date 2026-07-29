@@ -7,6 +7,7 @@ from app.models.domain import ArticleSummary
 from app.ai.base import BaseLLMProvider
 from app.prompts.summary_prompt import SUMMARY_SYSTEM_PROMPT, SUMMARY_USER_PROMPT
 from app.prompts.linkedin_prompt import get_linkedin_system_prompt, get_linkedin_user_prompt
+from app.prompts.instagram_prompt import get_instagram_system_prompt, get_instagram_user_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,78 @@ class GeminiProvider(BaseLLMProvider):
                 "hashtags": tags,
                 "word_count": len(fallback_caption.split())
             }
+
+    async def generate_instagram_post(
+        self,
+        prompt: str,
+        media_type: str = "image"
+    ) -> Dict[str, Any]:
+        system_prompt = get_instagram_system_prompt()
+        user_prompt = get_instagram_user_prompt(prompt_idea=prompt, media_type=media_type)
+
+        try:
+            raw_text = await self._call_gemini_api(system_prompt, user_prompt)
+            data = json.loads(raw_text)
+            caption = data.get("caption", "").strip()
+            raw_hashtags = data.get("hashtags", [])
+            hashtags = self.sanitize_instagram_hashtags(raw_hashtags, prompt)
+
+            return {
+                "caption": caption,
+                "hashtags": hashtags
+            }
+        except Exception as e:
+            logger.error(f"Gemini Instagram post generation error: {e}")
+            fallback_caption = f"{prompt.strip()}.\n\nWhat do you think? Let us know below."
+            tags = self.sanitize_instagram_hashtags([], prompt)
+            return {
+                "caption": fallback_caption,
+                "hashtags": tags
+            }
+
+    @staticmethod
+    def sanitize_instagram_hashtags(raw_hashtags: list, prompt: str) -> list:
+        cleaned = []
+        if isinstance(raw_hashtags, list):
+            for tag in raw_hashtags:
+                if isinstance(tag, str):
+                    tag_clean = tag.strip().replace(" ", "").replace("#", "")
+                    if tag_clean and len(tag_clean) > 1:
+                        cleaned.append(f"#{tag_clean}")
+
+        seen = set()
+        unique_tags = []
+        for tag in cleaned:
+            if tag.lower() not in seen:
+                seen.add(tag.lower())
+                unique_tags.append(tag)
+
+        if len(unique_tags) < 8:
+            import re
+            words = re.findall(r'[A-Za-z0-9]+', prompt)
+            stopwords = {"with", "from", "that", "this", "have", "releases", "shows", "about", "your", "more", "what", "would", "like", "post", "communicate"}
+            for w in words:
+                if len(w) > 3 and w.lower() not in stopwords:
+                    tt = f"#{w.capitalize()}"
+                    if tt.lower() not in seen:
+                        seen.add(tt.lower())
+                        unique_tags.append(tt)
+                        if len(unique_tags) >= 10:
+                            break
+
+        defaults = [
+            "#Tech", "#TechStartup", "#Innovation", "#Programming",
+            "#Automation", "#DeveloperLife", "#MachineLearning", "#SaaS",
+            "#BuildInPublic", "#TechCommunity", "#SoftwareEngineering"
+        ]
+        for d in defaults:
+            if len(unique_tags) >= 8:
+                break
+            if d.lower() not in seen:
+                seen.add(d.lower())
+                unique_tags.append(d)
+
+        return unique_tags[:10]
 
     @staticmethod
     def sanitize_hashtags(raw_hashtags: list, title: str) -> list:

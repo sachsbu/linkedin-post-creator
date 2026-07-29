@@ -33,6 +33,7 @@ class GeneratePostRequest(BaseModel):
 
 class PostResponse(BaseModel):
     id: int
+    platform: str = "linkedin"
     story_id: str
     source_name: str
     title: str
@@ -53,4 +54,41 @@ class PostResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MediaValidationResult(BaseModel):
+    is_valid: bool
+    media_type: str  # "image" or "video"
+    mime_type: str
+    file_size_mb: float
+    width: Optional[int] = None
+    height: Optional[int] = None
+    aspect_ratio: Optional[str] = None  # e.g., "1:1", "4:5", "1.91:1", "custom"
+    duration_seconds: Optional[float] = None
+    warnings: List[str] = []
+    errors: List[str] = []
+
+
+class GenerateInstagramPostRequest(BaseModel):
+    prompt: str = Field(description="The user post prompt or idea")
+    media_path: Optional[str] = Field(default=None, description="Path or filename of uploaded image or video")
+    media_type: str = Field(default="image", description="image or video")
+    provider: Optional[str] = None
+    model: Optional[str] = None
+
+
+class InstagramPostResponse(BaseModel):
+    id: Optional[int] = None
+    platform: str = "instagram"
+    prompt: str
+    caption: str
+    hashtags: List[str]
+    media_path: Optional[str] = None
+    media_type: str = "image"  # image or video
+    warnings: List[str] = []
+    model_used: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Story, PostResponse, ToneOption, ProviderOption } from '../types';
+import { Story, PostResponse, ToneOption, ProviderOption, MediaValidationResult, InstagramPostResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -34,7 +34,34 @@ export const generatePost = async (
   return response.data;
 };
 
+export const uploadMedia = async (file: File): Promise<MediaValidationResult & { filename: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
 
+  const response = await axios.post<MediaValidationResult>(`${API_BASE}/media/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+  return { ...response.data, filename: file.name };
+};
+
+export const generateInstagramPost = async (
+  prompt: string,
+  mediaPath?: string,
+  mediaType: 'image' | 'video' = 'image',
+  provider?: ProviderOption,
+  model?: string
+): Promise<InstagramPostResponse> => {
+  const providerParam = provider === 'default' ? undefined : provider;
+  const response = await axios.post<InstagramPostResponse>(`${API_BASE}/posts/instagram/generate`, {
+    prompt,
+    media_path: mediaPath,
+    media_type: mediaType,
+    provider: providerParam,
+    model
+  });
+  return response.data;
+};
 
 export const fetchPostHistory = async (limit: number = 20): Promise<PostResponse[]> => {
   const response = await axios.get<PostResponse[]>(`${API_BASE}/posts/history`, {
@@ -47,4 +74,5 @@ export const publishPostToLinkedIn = async (postId: number): Promise<{ status: s
   const response = await axios.post<{ status: string; post_urn: string; message: string }>(`${API_BASE}/posts/${postId}/publish`);
   return response.data;
 };
+
 

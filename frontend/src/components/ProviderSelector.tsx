@@ -27,6 +27,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({ selectedProv
           const active = selectedProvider === p.id;
           return (
             <button
+              type="button"
               key={p.id}
               onClick={() => onSelectProvider(p.id)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left ${

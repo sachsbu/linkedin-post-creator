@@ -40,6 +40,34 @@ export interface PostResponse {
   created_at: string;
 }
 
+export type PlatformOption = 'linkedin' | 'instagram' | 'twitter' | 'facebook' | 'threads' | 'medium' | 'devto';
 export type ToneOption = 'professional' | 'founder' | 'developer' | 'investor';
 export type ProviderOption = 'default' | 'gemini' | 'openai' | 'ollama' | 'lmstudio';
+
+export interface MediaValidationResult {
+  is_valid: boolean;
+  media_type: 'image' | 'video';
+  mime_type: string;
+  file_size_mb: number;
+  width?: number;
+  height?: number;
+  aspect_ratio?: string;
+  duration_seconds?: number;
+  warnings: string[];
+  errors: string[];
+}
+
+export interface InstagramPostResponse {
+  id?: number;
+  platform: 'instagram';
+  prompt: string;
+  caption: string;
+  hashtags: string[];
+  media_path?: string;
+  media_type: 'image' | 'video';
+  warnings: string[];
+  model_used: string;
+  created_at: string;
+}
+
 

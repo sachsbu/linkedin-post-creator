@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     LINKEDIN_ACCESS_TOKEN: str = ""
     LINKEDIN_ORGANIZATION_ID: str = ""
 
+    # Instagram Settings
+    INSTAGRAM_MAX_IMAGE_SIZE_MB: float = 10.0
+    INSTAGRAM_MAX_VIDEO_SIZE_MB: float = 50.0
+    INSTAGRAM_ALLOWED_IMAGE_FORMATS: list = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    INSTAGRAM_ALLOWED_VIDEO_FORMATS: list = ["video/mp4", "video/quicktime"]
+    INSTAGRAM_MAX_VIDEO_DURATION_SECONDS: int = 90
+    INSTAGRAM_HASHTAGS_MIN: int = 8
+    INSTAGRAM_HASHTAGS_MAX: int = 10
+    INSTAGRAM_MAX_CAPTION_SENTENCES: int = 2
+
     
     # Internal Paths & Storage
     BASE_DIR: Path = BASE_DIR

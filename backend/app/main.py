@@ -9,6 +9,7 @@ from app.database import init_db
 from app.api.stories import router as stories_router
 from app.api.posts import router as posts_router
 from app.api.health import router as health_router
+from app.api.media import router as media_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +46,7 @@ app.mount("/output", StaticFiles(directory=str(settings.OUTPUT_FOLDER)), name="o
 app.include_router(health_router)
 app.include_router(stories_router)
 app.include_router(posts_router)
+app.include_router(media_router)
 
 if __name__ == "__main__":
     import uvicorn

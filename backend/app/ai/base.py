@@ -27,3 +27,17 @@ class BaseLLMProvider(ABC):
         Returns dict with keys: 'caption', 'hashtags', 'word_count'.
         """
         pass
+
+    @abstractmethod
+    async def generate_instagram_post(
+        self,
+        prompt: str,
+        media_type: str = "image"
+    ) -> Dict[str, Any]:
+        """
+        Generates creative Instagram post (max 2 concise sentences, friendly/engaging, CTA)
+        and 8-10 dynamic hashtags.
+        Returns dict with keys: 'caption', 'hashtags'.
+        """
+        pass
+
