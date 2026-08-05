@@ -36,8 +36,22 @@ class BaseLLMProvider(ABC):
     ) -> Dict[str, Any]:
         """
         Generates creative Instagram post (max 2 concise sentences, friendly/engaging, CTA)
-        and 8-10 dynamic hashtags.
-        Returns dict with keys: 'caption', 'hashtags'.
+        and 3-6 dynamic hashtags inside it.
+        Returns dict with keys: 'caption'.
         """
         pass
-
+    @staticmethod
+    def strip_trailing_hashtags(caption: str) -> str:
+        """Strips out trailing lines that consist purely of hashtag lists."""
+        if not caption:
+            return ""
+        caption = caption.strip()
+        lines = caption.split('\n')
+        while lines:
+            last_line = lines[-1].strip()
+            words = last_line.split()
+            if words and all(w.startswith('#') for w in words):
+                lines.pop()
+            else:
+                break
+        return '\n'.join(lines).strip()

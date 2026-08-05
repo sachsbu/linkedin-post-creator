@@ -28,12 +28,12 @@ STRICT CONSTRAINTS:
 4. ABSOLUTELY NO AI FLUFF / CLICHES:
    - NEVER use words like: "In today's fast-paced digital world", "delve", "game-changer", "testament", "tapestry", "beacon", "groundbreaking", "beacon of hope".
    - Sound human, conversational, and direct.
-5. Dynamic Hashtags: Generate EXACTLY 5 to 6 highly relevant, trending hashtags derived dynamically from the specific story topic, technologies, framework, company, or domain mentioned in the story (e.g. #Python, #OpenAI, #Kubernetes, #Cybersecurity). Do NOT use generic or static placeholders.
+5. Embed 3–6 highly relevant, trending hashtags directly within the writing paragraphs instead of listing them separately. DO NOT append or list hashtags at the end of the caption.
 
 Respond strictly in JSON format matching this schema:
 {{
-  "caption": "The complete LinkedIn caption text (excluding hashtags)",
-  "hashtags": ["#TopicSpecificHashtag1", "#TopicSpecificHashtag2", "#TopicSpecificHashtag3", "#TopicSpecificHashtag4", "#TopicSpecificHashtag5", "#TopicSpecificHashtag6"]
+  "caption": "The complete LinkedIn caption text with inline hashtags (DO NOT add a hashtag list at the end)",
+  "hashtags": ["#TopicSpecificHashtag1", "#TopicSpecificHashtag2", "#TopicSpecificHashtag3", "#TopicSpecificHashtag4", "#TopicSpecificHashtag5"]
 }}
 """
 

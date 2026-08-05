@@ -52,3 +52,20 @@ def test_dynamic_tone_prompts():
         assert tone in usr_prompt
 
 
+def test_strip_trailing_hashtags():
+    from app.ai.base import BaseLLMProvider
+
+    caption_with_trailing = (
+        "Scaling IoT infrastructure shouldn't mean scaling your maintenance headaches.\n\n"
+        "Real-time visibility is key with #IoTmonitoring for proactive oversight.\n\n"
+        "How is your team managing device health at scale?\n\n"
+        "#IoTmonitoring #CloudInfrastructure #IoTManagement #PredictiveMaintenance #SmartTech #JediSense"
+    )
+
+    cleaned = BaseLLMProvider.strip_trailing_hashtags(caption_with_trailing)
+    assert "#IoTmonitoring #CloudInfrastructure" not in cleaned
+    assert "#IoTmonitoring for proactive oversight" in cleaned
+    assert "How is your team managing device health at scale?" in cleaned
+
+
+

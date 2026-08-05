@@ -159,8 +159,7 @@ class LinkedInPublisherService:
         async with httpx.AsyncClient(timeout=20.0) as client:
             author_urn = await cls.resolve_author_urn(client, token, org_id)
 
-            hashtag_text = " ".join(hashtags) if hashtags else ""
-            full_text = f"{caption}\n\n{hashtag_text}".strip()
+            full_text = caption.strip()
 
             logger.info(f"Attempting to publish post to LinkedIn Author URN '{author_urn}'...")
 

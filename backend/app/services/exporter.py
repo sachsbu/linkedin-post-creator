@@ -33,8 +33,6 @@ class ArtifactExporter:
 
 {caption}
 
-{hashtag_str}
-
 ---
 - **Source Article**: {source_link}
 - **Discussion/Ref**: {hn_link}
@@ -47,7 +45,7 @@ class ArtifactExporter:
         post_md_file.write_text(post_md_content, encoding="utf-8")
 
         # 2. Write post.txt (Pure copy-paste content)
-        post_txt_content = f"{caption}\n\n{hashtag_str}"
+        post_txt_content = caption
         post_txt_file = output_dir / "post.txt"
         post_txt_file.write_text(post_txt_content, encoding="utf-8")
 
@@ -92,7 +90,6 @@ class ArtifactExporter:
     @staticmethod
     def to_html(title: str, caption: str, hashtags: List[str], source_url: str, img_name: str) -> str:
         formatted_caption = caption.replace('\n', '<br>')
-        hashtag_spans = " ".join([f'<span style="color:#0A66C2; font-weight:600;">{tag}</span>' for tag in hashtags])
         return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -103,7 +100,6 @@ class ArtifactExporter:
         .card {{ background: white; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.15); width: 550px; padding: 20px; }}
         .header {{ font-weight: bold; font-size: 16px; color: #181818; margin-bottom: 12px; }}
         .body {{ font-size: 14px; color: #181818; line-height: 1.5; margin-bottom: 14px; }}
-        .hashtags {{ font-size: 14px; margin-bottom: 14px; }}
         .img-container img {{ width: 100%; border-radius: 6px; border: 1px solid #E0E0E0; }}
     </style>
 </head>
@@ -111,7 +107,6 @@ class ArtifactExporter:
     <div class="card">
         <div class="header">{title}</div>
         <div class="body">{formatted_caption}</div>
-        <div class="hashtags">{hashtag_spans}</div>
         <div class="img-container">
             <img src="{img_name}" alt="Post image" />
         </div>

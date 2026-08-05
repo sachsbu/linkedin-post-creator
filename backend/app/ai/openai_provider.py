@@ -96,7 +96,7 @@ class OpenAIProvider(BaseLLMProvider):
         try:
             raw_text = await self._call_openai_api(system_prompt, user_prompt)
             data = json.loads(raw_text)
-            caption = data.get("caption", "").strip()
+            caption = self.strip_trailing_hashtags(data.get("caption", "").strip())
             raw_hashtags = data.get("hashtags", [])
             hashtags = GeminiProvider.sanitize_hashtags(raw_hashtags, title)
             return {

@@ -34,7 +34,7 @@ graph TD
 | Platform | Input Workflow | AI Output Format | Special Features |
 |---|---|---|---|
 | **LinkedIn** (Existing) | Trending News (Hacker News / CNET) or Custom Title + Tone Selection | Professional hook, 2-4 short paragraphs, practical insight, CTA (<180 words), 5-8 topic hashtags | Auto social image card generation, tone personas (Founder, Developer, Investor, Professional), direct publishing |
-| **Instagram** (New) | Media Upload (Image/Reel Video) + Multiline Content Prompt | Creative caption (max 2 concise sentences), friendly/engaging tone, CTA, 8–10 dynamic hashtags | Real-time aspect ratio checks (1:1, 4:5, 1.91:1), crop warnings, video Reel duration validation, prompt sample chips |
+| **Instagram** (New) | Media Upload (Image/Reel Video) + Multiline Content Prompt | Creative caption (max 2 concise sentences), friendly/engaging tone, CTA, 3–6 dynamic hashtags | Real-time aspect ratio checks (1:1, 4:5, 1.91:1), crop warnings, video Reel duration validation, prompt sample chips |
 | **X (Twitter)** (Future) | Pluggable Strategy | Single tweet or thread format | Ready for strategy registration |
 | **Facebook / Threads / Medium / Dev.to** (Future) | Pluggable Strategy | Platform-specific writing tone & format | Ready for strategy registration |
 
@@ -94,7 +94,7 @@ linkedin-post-creator/
 ## API Endpoints
 
 - `POST /api/posts/generate`: Generate LinkedIn post via `LinkedInGenerator` strategy.
-- `POST /api/posts/instagram/generate`: Generate Instagram caption & 8–10 dynamic hashtags via `InstagramGenerator` strategy.
+- `POST /api/posts/instagram/generate`: Generate Instagram caption & 3–6 dynamic hashtags inside it via `InstagramGenerator` strategy.
 - `POST /api/media/upload`: Upload and validate image or video media against Instagram specs.
 - `GET /api/posts/history`: Retrieve history of generated social posts.
 

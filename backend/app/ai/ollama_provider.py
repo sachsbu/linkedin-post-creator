@@ -121,7 +121,7 @@ class OllamaProvider(BaseLLMProvider):
         try:
             raw_text = await self._call_ollama_api(system_prompt, user_prompt)
             data = json.loads(_clean_json_text(raw_text))
-            caption = data.get("caption", "").strip()
+            caption = self.strip_trailing_hashtags(data.get("caption", "").strip())
             raw_hashtags = data.get("hashtags", [])
             hashtags = GeminiProvider.sanitize_hashtags(raw_hashtags, title)
             return {

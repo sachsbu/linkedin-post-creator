@@ -51,7 +51,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
   }
 
   const copyToClipboard = () => {
-    const fullText = `${post.linkedin_caption}\n\n${post.hashtags.join(' ')}`;
+    const fullText = post.linkedin_caption;
     navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -185,13 +185,6 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
         {/* Post Text Body */}
         <div className="p-4 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
           {post.linkedin_caption}
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {post.hashtags.map((tag, idx) => (
-              <span key={idx} className="text-sky-400 font-medium hover:underline cursor-pointer">
-                {tag}
-              </span>
-            ))}
-          </div>
         </div>
 
         {/* Attached Article / Social Image Preview */}

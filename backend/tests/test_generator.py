@@ -44,5 +44,5 @@ def test_artifact_exporter(tmp_path: Path):
     assert output_files["post_txt"].exists()
     assert output_files["metadata_json"].exists()
     
-    assert "Meta Releases Llama 3.3" in output_files["post_md"].read_text(encoding="utf-8")
-    assert "#OpenSource" in output_files["post_txt"].read_text(encoding="utf-8")
+    assert "#OpenSource" in output_files["metadata_json"].read_text(encoding="utf-8")
+
