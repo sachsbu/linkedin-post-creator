@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Calendar, ArrowRight, FileText, Trash2, CheckSquare, Square, RefreshCw } from 'lucide-react';
 import { PostResponse } from '../types';
 import { deletePost, deletePostsBatch } from '../api/client';
@@ -21,6 +21,12 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isBatchDeleting, setIsBatchDeleting] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      onRefreshHistory();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

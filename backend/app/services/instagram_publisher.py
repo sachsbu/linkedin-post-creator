@@ -31,7 +31,7 @@ class InstagramPublisherService:
         if not media_url_or_path.startswith(("http://", "https://")):
             # If running locally or on server, wrap in host URL
             filename = media_url_or_path.split("/")[-1].split("\\")[-1]
-            media_url = f"http://127.0.0.1:8000/output/uploads/{filename}"
+            media_url = f"http://127.0.0.1:8001/output/uploads/{filename}"
         else:
             media_url = media_url_or_path
 

@@ -58,9 +58,9 @@ TEMPERATURE=0.7
 
 5. Start the backend Uvicorn server:
    ```bash
-   uvicorn app.main:app --reload --port 8000
+   uvicorn app.main:app --reload --port 8001
    ```
-   *The backend will be running at `http://127.0.0.1:8000` with interactive API docs at `http://127.0.0.1:8000/docs`.*
+   *The backend will be running at `http://127.0.0.1:8001` with interactive API docs at `http://127.0.0.1:8001/docs`.*
 
 ---
 
