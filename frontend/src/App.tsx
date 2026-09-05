@@ -169,7 +169,7 @@ export const App: React.FC = () => {
                       }}
                       className="bg-slate-800 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
                     >
-                      <option value="hacker_news">Hacker News</option>
+                      <option value="hacker_news">Hacker News (IoT & Sensors)</option>
                       <option value="cnet">CNET Tech News</option>
                       <option value="self">Custom Title (Self)</option>
                     </select>
@@ -184,7 +184,7 @@ export const App: React.FC = () => {
                     className="w-full py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isFetchingStories ? 'animate-spin' : ''}`} />
-                    <span>{isFetchingStories ? 'Fetching Ranked Stories...' : `Load Ranked Stories (${newsSource === 'cnet' ? 'CNET' : 'Hacker News'})`}</span>
+                    <span>{isFetchingStories ? 'Fetching Ranked Stories...' : `Load Ranked Stories (${newsSource === 'cnet' ? 'CNET' : 'Hacker News (IoT & Sensors)'})`}</span>
                   </button>
                 )}
 
@@ -266,7 +266,7 @@ export const App: React.FC = () => {
                       </div>
                       <p className="font-semibold text-slate-200">Ranked Stories Not Loaded</p>
                       <p className="text-slate-500 max-w-xs mx-auto">
-                        Click the button below to fetch and rank live front-page stories from {newsSource === 'cnet' ? 'CNET Tech News' : 'Hacker News'}.
+                        Click the button below to fetch and rank live stories from {newsSource === 'cnet' ? 'CNET Tech News' : 'Hacker News (IoT & Sensors)'}.
                       </p>
                       <button
                         type="button"

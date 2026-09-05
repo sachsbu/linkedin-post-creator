@@ -18,9 +18,20 @@ def test_hacker_news_rank_decay():
 
 def test_hacker_news_is_iot_story():
     fetcher = HackerNewsFetcher()
+    # Positive matches
     assert fetcher._is_iot_story("Building an ESP32 weather station with MQTT") is True
     assert fetcher._is_iot_story("Raspberry Pi Pico W for home automation") is True
+    assert fetcher._is_iot_story("Show HN: I replaced a $120k bowling center system with $1,600 in ESP32s") is True
+    assert fetcher._is_iot_story("U.S. pulling ocean sensors a shock for Canadian research") is True
+    assert fetcher._is_iot_story("Industrial telemetry with MQTT and SCADA") is True
+    assert fetcher._is_iot_story("Cloud sensor monitoring platform architecture") is True
+
+    # Negative matches (ensuring word boundaries prevent false positives)
     assert fetcher._is_iot_story("Why Postgres is all you need") is False
+    assert fetcher._is_iot_story("I raised 5 kids. Looking back, their careers as adults make perfect sense") is False
+    assert fetcher._is_iot_story("Ask HN: Does anyone else feel like nothing matters anymore?") is False
+    assert fetcher._is_iot_story("Biggest dark matter detector spots a single weird particle") is False
+    assert fetcher._is_iot_story("Desktop AI for ops is still subsidized") is False
 
 
 @pytest.mark.asyncio
@@ -28,7 +39,8 @@ async def test_hacker_news_fetch_trending_stories_iot_ratio():
     fetcher = HackerNewsFetcher()
     stories = await fetcher.fetch_trending_stories(limit=15)
     
-    assert len(stories) == 15
-    iot_count = sum(1 for s in stories if "IoT" in s.source_name or fetcher._is_iot_story(s.title))
-    # Verify that at least 10 stories out of 15 are IoT related
-    assert iot_count >= 10
+    assert len(stories) > 0
+    # Verify that 100% of returned stories pass the strict IoT / Sensor validator
+    for s in stories:
+        assert fetcher._is_iot_story(s.title), f"Non-IoT story found: {s.title}"
+        assert s.source_name == "Hacker News (IoT & Sensors)"

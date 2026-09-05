@@ -1,4 +1,5 @@
 import asyncio
+import re
 import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
@@ -8,32 +9,77 @@ from app.models.domain import Story
 from app.sources.base import BaseSourceFetcher
 
 class HackerNewsFetcher(BaseSourceFetcher):
-    IOT_KEYWORDS = {
-        "iot", "internet of things", "esp32", "esp8266", "raspberry pi",
-        "arduino", "embedded", "smart home", "zigbee", "z-wave", "mqtt",
-        "microcontroller", "sensors", "sensor", "firmware", "edge computing",
-        "home assistant", "stm32", "risc-v", "matter protocol", "lora",
-        "lorawan", "ble", "bluetooth low energy"
-    }
+    IOT_PATTERNS = [
+        r"\biot\b",
+        r"\biiot\b",
+        r"\binternet of things\b",
+        r"\bsensors?\b",
+        r"\bsensing\b",
+        r"\btelemetry\b",
+        r"\besp32[s]?\b",
+        r"\besp8266[s]?\b",
+        r"\besp-idf\b",
+        r"\braspberry pi[s]?\b",
+        r"\brp2040[s]?\b",
+        r"\brp2350[s]?\b",
+        r"\barduino[s]?\b",
+        r"\bmqtt\b",
+        r"\bzigbee\b",
+        r"\bz-?wave\b",
+        r"\blorawan?\b",
+        r"\blora\b",
+        r"\bble\b",
+        r"\bbluetooth low energy\b",
+        r"\bmatter (?:protocol|over thread|standard|device[s]?)\b",
+        r"\bscada\b",
+        r"\brisc-v\b",
+        r"\bstm32[s]?\b",
+        r"\bmicrocontrollers?\b",
+        r"\bembedded (?:systems?|linux|firmware|hardware|devices?|engineering|software|rust|c\+\+|c)\b",
+        r"\bfirmware\b",
+        r"\bedge (?:computing|ai|devices?|gateways?)\b",
+        r"\bsmart home\b",
+        r"\bhome assistant\b",
+        r"\b(?:condition|remote|cloud|sensor) monitoring\b",
+        r"\bindustrial (?:iot|automation|telemetry)\b",
+        r"\bconnected devices?\b",
+        r"\baccelerometer[s]?\b",
+        r"\blidar[s]?\b",
+        r"\btransducers?\b",
+        r"\bactuators?\b",
+    ]
+    IOT_REGEX = re.compile("|".join(IOT_PATTERNS), re.IGNORECASE)
+
+    # Keywords that indicate high relevance to cloud sensor monitoring & telemetry (JediSense focus)
+    SENSOR_MONITORING_BOOST_REGEX = re.compile(
+        r"\b(sensors?|sensing|telemetry|condition monitoring|remote monitoring|cloud monitoring|sensor monitoring|scada|iiot|industrial iot|predictive maintenance)\b",
+        re.IGNORECASE,
+    )
 
     @property
     def name(self) -> str:
         return "Hacker News"
 
-    def calculate_rank_score(self, score: int, comments: int, timestamp: int) -> float:
+    def calculate_rank_score(
+        self, score: int, comments: int, timestamp: int, is_sensor_focused: bool = False
+    ) -> float:
         """
         Calculates ranking score balancing popularity (score, comments) and recency decay.
         Score = (Score + Comments * 1.5) / (Age_in_hours + 2)^1.8
+        Stories focused specifically on sensors, telemetry, and monitoring receive a 1.35x relevance boost.
         """
         now = time.time()
         age_hours = max((now - timestamp) / 3600.0, 0.1)
         base_points = score + (comments * 1.5)
         decay = (age_hours + 2.0) ** 1.8
-        return base_points / decay
+        rank = base_points / decay
+        if is_sensor_focused:
+            rank *= 1.35
+        return rank
 
     def _is_iot_story(self, title: str) -> bool:
-        title_lower = title.lower()
-        return any(kw in title_lower for kw in self.IOT_KEYWORDS)
+        """Determines if a story is IoT/sensor-related using exact word boundaries."""
+        return bool(self.IOT_REGEX.search(title))
 
     async def _fetch_item(self, client: httpx.AsyncClient, story_id: str) -> Optional[Dict[str, Any]]:
         try:
@@ -47,37 +93,72 @@ class HackerNewsFetcher(BaseSourceFetcher):
 
     async def fetch_trending_stories(self, limit: int = 15) -> List[Story]:
         """
-        Fetches trending stories with a focus on IoT-related news:
-        ~10 out of 15 stories focused on IoT, and ~5 from general top HN stories.
+        Fetches trending stories strictly focused on IoT, sensors, telemetry,
+        and embedded hardware news from Hacker News.
         """
-        target_iot_count = max(1, min(limit, round(limit * (10 / 15))))
-
-        iot_stories: List[Story] = []
-        general_stories: List[Story] = []
+        now = int(time.time())
+        past_180d = now - (180 * 86400)
         seen_ids = set()
+        candidate_stories: List[Story] = []
+
+        search_queries = [
+            "IoT",
+            "sensor",
+            "sensors",
+            "ESP32",
+            "MQTT",
+            "telemetry",
+            "embedded hardware",
+            "industrial IoT",
+            "smart home",
+        ]
 
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # 1. Fetch IoT stories using Algolia HN Search API
-            try:
-                pop_url = "https://hn.algolia.com/api/v1/search?query=IoT&tags=story&hitsPerPage=30"
-                rec_url = "https://hn.algolia.com/api/v1/search_by_date?query=IoT&tags=story&hitsPerPage=30"
-                
-                pop_resp, rec_resp = await asyncio.gather(
-                    client.get(pop_url),
-                    client.get(rec_url),
-                    return_exceptions=True
+            # 1. Fetch targeted IoT & sensor stories concurrently from Algolia HN API
+            algolia_tasks = [
+                client.get(
+                    "https://hn.algolia.com/api/v1/search",
+                    params={
+                        "query": q,
+                        "tags": "story",
+                        "restrictSearchableAttributes": "title",
+                        "numericFilters": f"created_at_i>{past_180d}",
+                        "hitsPerPage": 20,
+                    },
                 )
+                for q in search_queries
+            ]
 
-                pop_hits = pop_resp.json().get("hits", []) if isinstance(pop_resp, httpx.Response) and pop_resp.status_code == 200 else []
-                rec_hits = rec_resp.json().get("hits", []) if isinstance(rec_resp, httpx.Response) and rec_resp.status_code == 200 else []
+            # Also fetch latest real-time submissions for IoT and sensor
+            algolia_tasks.append(
+                client.get("https://hn.algolia.com/api/v1/search_by_date", params={"query": "IoT", "tags": "story", "hitsPerPage": 20})
+            )
+            algolia_tasks.append(
+                client.get("https://hn.algolia.com/api/v1/search_by_date", params={"query": "sensor", "tags": "story", "hitsPerPage": 20})
+            )
 
-                for hit in pop_hits + rec_hits:
+            # 2. Also check top official Firebase HN stories for any live front-page IoT stories
+            firebase_task = client.get(f"{settings.HN_API_BASE}/topstories.json")
+
+            all_tasks = algolia_tasks + [firebase_task]
+            results = await asyncio.gather(*all_tasks, return_exceptions=True)
+
+            # Process Algolia results
+            algolia_results = results[:-1]
+            firebase_res = results[-1]
+
+            for r in algolia_results:
+                if not isinstance(r, httpx.Response) or r.status_code != 200:
+                    continue
+                hits = r.json().get("hits", [])
+                for hit in hits:
                     sid = str(hit.get("objectID", ""))
-                    if not sid or sid in seen_ids:
+                    title = (hit.get("title") or "").strip()
+                    if not sid or sid in seen_ids or not title:
                         continue
-                    
-                    title = hit.get("title", "").strip()
-                    if not title:
+
+                    # Strict IoT & sensor validation
+                    if not self._is_iot_story(title):
                         continue
 
                     seen_ids.add(sid)
@@ -89,9 +170,10 @@ class HackerNewsFetcher(BaseSourceFetcher):
                     published_at = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                     author = hit.get("author", "anonymous")
 
-                    rank_score = self.calculate_rank_score(score, comments_count, timestamp)
+                    is_sensor_boost = bool(self.SENSOR_MONITORING_BOOST_REGEX.search(title))
+                    rank_score = self.calculate_rank_score(score, comments_count, timestamp, is_sensor_focused=is_sensor_boost)
 
-                    iot_stories.append(
+                    candidate_stories.append(
                         Story(
                             id=sid,
                             title=title,
@@ -102,25 +184,24 @@ class HackerNewsFetcher(BaseSourceFetcher):
                             comments_count=comments_count,
                             published_at=published_at,
                             rank_score=rank_score,
-                            source_name="Hacker News (IoT)",
+                            source_name="Hacker News (IoT & Sensors)",
                         )
                     )
-            except Exception:
-                pass
 
-            # 2. Fetch General Top Stories concurrently from official Firebase HN API
-            try:
-                top_stories_url = f"{settings.HN_API_BASE}/topstories.json"
-                response = await client.get(top_stories_url)
-                if response.status_code == 200:
-                    candidate_ids = [str(sid) for sid in response.json()[: limit * 2] if str(sid) not in seen_ids]
+            # Process Firebase HN top stories
+            if isinstance(firebase_res, httpx.Response) and firebase_res.status_code == 200:
+                try:
+                    candidate_ids = [str(sid) for sid in firebase_res.json()[:40] if str(sid) not in seen_ids]
                     items_data = await asyncio.gather(*[self._fetch_item(client, sid) for sid in candidate_ids])
 
                     for sid, data in zip(candidate_ids, items_data):
                         if not data or data.get("type") != "story" or data.get("deleted") or data.get("dead"):
                             continue
 
-                        title = data.get("title", "")
+                        title = (data.get("title") or "").strip()
+                        if not title or not self._is_iot_story(title):
+                            continue
+
                         url = data.get("url", f"https://news.ycombinator.com/item?id={sid}")
                         score = data.get("score", 0)
                         comments_count = data.get("descendants", 0)
@@ -129,45 +210,28 @@ class HackerNewsFetcher(BaseSourceFetcher):
                         published_at = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                         author = data.get("by", "anonymous")
 
-                        rank_score = self.calculate_rank_score(score, comments_count, timestamp)
-                        is_iot = self._is_iot_story(title)
-                        source_name = "Hacker News (IoT)" if is_iot else self.name
-
-                        story_obj = Story(
-                            id=sid,
-                            title=title,
-                            url=url,
-                            hn_url=hn_url,
-                            author=author,
-                            score=score,
-                            comments_count=comments_count,
-                            published_at=published_at,
-                            rank_score=rank_score,
-                            source_name=source_name,
-                        )
+                        is_sensor_boost = bool(self.SENSOR_MONITORING_BOOST_REGEX.search(title))
+                        rank_score = self.calculate_rank_score(score, comments_count, timestamp, is_sensor_focused=is_sensor_boost)
 
                         seen_ids.add(sid)
-                        if is_iot:
-                            iot_stories.append(story_obj)
-                        else:
-                            general_stories.append(story_obj)
-            except Exception:
-                pass
+                        candidate_stories.append(
+                            Story(
+                                id=sid,
+                                title=title,
+                                url=url,
+                                hn_url=hn_url,
+                                author=author,
+                                score=score,
+                                comments_count=comments_count,
+                                published_at=published_at,
+                                rank_score=rank_score,
+                                source_name="Hacker News (IoT & Sensors)",
+                            )
+                        )
+                except Exception:
+                    pass
 
-            # Sort pools by rank_score descending
-            iot_stories.sort(key=lambda s: s.rank_score, reverse=True)
-            general_stories.sort(key=lambda s: s.rank_score, reverse=True)
+        # Sort all validated IoT stories by rank score descending
+        candidate_stories.sort(key=lambda s: s.rank_score, reverse=True)
 
-            # Select top IoT stories and General stories
-            selected_iot = iot_stories[:target_iot_count]
-            remaining_slots = limit - len(selected_iot)
-            selected_general = general_stories[:remaining_slots]
-
-            final_stories = selected_iot + selected_general
-            if len(final_stories) < limit:
-                leftover_iot = iot_stories[target_iot_count:]
-                final_stories.extend(leftover_iot[: limit - len(final_stories)])
-
-            return final_stories[:limit]
-
-
+        return candidate_stories[:limit]

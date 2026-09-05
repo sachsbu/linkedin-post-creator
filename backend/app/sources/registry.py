@@ -7,7 +7,10 @@ class SourceRegistry:
     def __init__(self):
         self._sources: Dict[str, BaseSourceFetcher] = {}
         # Register default sources
-        self.register(HackerNewsFetcher())
+        hn = HackerNewsFetcher()
+        self.register(hn)
+        self._sources["hacker_news"] = hn
+        self._sources["hacker_news_(iot_&_sensors)"] = hn
         self.register(CNETFetcher())
 
 
